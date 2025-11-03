@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ongoing Projects - SecureTech AV CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/index.html';
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    
+    /* Static status colors */
+    .status-new { background-color: #dbeafe; color: #1e40af; }
+    .status-contacted { background-color: #fef3c7; color: #92400e; }
+    .status-qualified { background-color: #d1fae5; color: #065f46; }
+    .status-proposal { background-color: #e0e7ff; color: #4338ca; }
+    .status-negotiation { background-color: #e9d5ff; color: #6b21a8; }
+    .status-won { background-color: #d1fae5; color: #065f46; }
+    .status-lost { background-color: #fee2e2; color: #991b1b; }
+
+    /* Toast */
+    #toast {
+      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+      padding: 1rem 1.5rem; border-radius: 0.5rem; color: white;
+      transform: translateX(400px); transition: transform 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    #toast.show { transform: translateX(0); }
+    .toast-success { background-color: #10b981; }
+    .toast-error { background-color: #ef4444; }
+
+    /* Responsive Sidebar */
+    @media (max-width: 1024px) {
+      aside { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease; 
+        position: fixed; 
+        z-index: 30; 
+      }
+      aside.open { transform: translateX(0); }
+      .ml-64 { margin-left: 0 !important; }
+    }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 25;
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* Table styles */
+    td, th {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    /* Specific column widths */
+    th:nth-child(1), td:nth-child(1) { min-width: 220px; } /* Project Name */
+    th:nth-child(2), td:nth-child(2) { min-width: 110px; } /* Value */
+    th:nth-child(3), td:nth-child(3) { min-width: 140px; } /* Location */
+    th:nth-child(4), td:nth-child(4) { min-width: 150px; } /* Team */
+    th:nth-child(5), td:nth-child(5) { min-width: 110px; } /* Status */
+    th:nth-child(6), td:nth-child(6) { min-width: 90px; }  /* Actions */
+     
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- Sidebar (Same as Dashboard) -->
+  <aside class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between z-20">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center gap-3 px-3">
+        <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-10 h-10 object-contain">
+        <h1 class="text-xl font-bold">SecureTech AV</h1>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a href="index/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full">
+          <i class="fa-solid fa-users w-5 text-center text-gray-500"></i>
+          Leads
+        </a>
+        <a href="dashboard/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full">
+          <i class="fa-solid fa-chart-pie w-5 text-center text-gray-500"></i>
+          Dashboard
+        </a>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg bg-teal-50 text-teal-600 text-left w-full font-semibold">
+          <i class="fa-solid fa-tasks w-5 text-center"></i>
+          Ongoing Projects
+        </button>
+          <a href="inventory/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+            <i class="fa-solid fa-boxes-stacked w-5 text-center text-gray-500"></i>
+            Inventory
+          </a>
+          <a href="/accesscontrol.html" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+            <i class="fa-solid fa-shield-halved w-5 text-center text-gray-500"></i>
+            Access Control
+          </a>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full">
+          <i class="fa-solid fa-folder w-5 text-center text-gray-500"></i>
+          Files
+        </button>
+      </nav>
+    </div>
+    <button class="w-full py-2 px-4 bg-teal-500 text-white rounded-lg font-bold hover:bg-teal-600 flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      New Project
+    </button>
+  </aside>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- Sidebar Overlay for Mobile -->
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <!-- Sidebar with Icons -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between z-30">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center gap-3 px-3">
+        <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-10 h-10 object-contain">
+        <h1 class="text-xl font-bold">SecureTech AV</h1>
+      </div>
+      <nav class="flex flex-col gap-1">
+        <a href="/leads/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-users w-5 text-center"></i>
+          Leads
+        </a>
+        <a href="/dashboard/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          Dashboard
+        </a>
+        <a href="#" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-left w-full font-medium">
+         <i class="fa-solid fa-diagram-project w-5 text-center"></i>
+          Ongoing Projects
+        </a>
+        <a href="/tasks/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-list-check w-5 text-center"></i>
+          Tasks
+        </a>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
+          Inventory
+        </button>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-shield-halved w-5 text-center"></i>
+          Access Control
+        </button>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-folder w-5 text-center"></i>
+          Files
+        </button>
+      </nav>
+    </div>
+    <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      New Project
+    </button>
+  </aside>
+
+  <!-- Main Layout -->
+  <div class="lg:ml-64">
+    <!-- Header -->
+    <header class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <button id="menuToggle" class="lg:hidden text-gray-600 text-2xl">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="flex items-center gap-4 flex-1 justify-end flex-wrap">
+        <div class="relative flex-1 max-w-md">
+          <input type="text" placeholder="Search all..." 
+            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+        <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
+          <i class="fa-solid fa-bell text-gray-600"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="flex items-center gap-2 cursor-pointer">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">S</div>
+          <div>
+            <p id="userName" class="text-sm font-semibold">Shivam</p>
+            <p id="userRole" class="text-xs text-gray-500">Admin</p>
+          </div>
+          <div class="relative group">
+            <i class="fa-solid fa-chevron-down text-xs text-gray-400 cursor-pointer"></i>
+            <!-- Dropdown menu -->
+            <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 hidden group-hover:block">
+              <div class="py-1">
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Profile</button>
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Settings</button>
+                <hr class="my-1 border-gray-100">
+                <button onclick="logout()" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-8">
+      <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <a href="dashboard.html" class="hover:text-teal-600 cursor-pointer">Home</a> / 
+        <span class="text-gray-900">Ongoing Projects</span>
+      </div>
+
+      <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Ongoing Projects</h1>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-500">Auto-synced from Leads</span>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+            <i class="fa-solid fa-sync-alt mr-1"></i> Live
+          </span>
+        </div>
+      </div>
+
+      <!-- Filter Bar + Export Button -->
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-3 items-center">
+        <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option>All Status</option>
+          <option>In Progress</option>
+          <option>On Hold</option>
+          <option>Testing</option>
+        </select>
+        <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <option>All Teams</option>
+          <option>AV Team A</option>
+          <option>AV Team B</option>
+          <option>Integration</option>
+        </select>
+        
+        <div class="ml-auto flex gap-2">
+          <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 flex items-center gap-2">
+            <i class="fa-solid fa-file-excel"></i> Export to Excel
+          </button>
+          <button class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add Manual Project
+          </button>
+        </div>
+      </div>
+
+      <!-- Projects Table -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table id="projectsTable" class="w-full text-sm text-left">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+              <tr>
+                <th class="px-6 py-4">Project Name</th>
+                <th class="px-6 py-4">Value</th>
+                <th class="px-6 py-4">Location</th>
+                <th class="px-6 py-4">Assigned Team</th>
+                <th class="px-6 py-4">Status</th>
+                <th class="px-6 py-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="projectsTableBody" class="divide-y divide-gray-200">
+              <!-- Projects loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 text-center text-sm text-gray-500">
+          Showing <span id="projectCount">0</span> active projects
+        </div>
+      </div>
+    </main>
+
+    <footer class="px-6 py-4 border-t border-gray-200 bg-white text-center text-xs text-gray-500">
+      <p>created by <span class="font-semibold text-teal-600">crest media tech</span></p>
+    </footer>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Sample Leads Data
+    const leadsData = [
+      { id: 1, name: "Acme Corp HQ", value: 120000, location: "Mumbai", team: "AV Team A", status: "In Progress", advance: true },
+      { id: 2, name: "Global Systems Office", value: 100000, location: "Delhi", team: "AV Team B", status: "Testing", advance: true },
+      { id: 3, name: "NexGen Lab Integration", value: 90000, location: "Bangalore", team: "Integration", status: "In Progress", advance: true },
+      { id: 4, name: "Skyline Builders Tower", value: 30000, location: "Pune", team: "AV Team A", status: "Won", advance: true },
+      { id: 5, name: "Fusion Labs R&D", value: 20000, location: "Hyderabad", team: "AV Team B", status: "On Hold", advance: true },
+      { id: 6, name: "TechHub Conference Room", value: 75000, location: "Chennai", team: "Integration", status: "In Progress", advance: false }
+    ];
+
+    localStorage.setItem('leads', JSON.stringify(leadsData));
+
+    function renderOngoingProjects() {
+      const leads = JSON.parse(localStorage.getItem('leads')) || [];
+      const ongoing = leads.filter(lead => 
+        lead.advance === true && 
+        lead.status !== 'Won' && 
+        lead.status !== 'Lost'
+      );
+
+      const tbody = document.getElementById('projectsTableBody');
+      const countEl = document.getElementById('projectCount');
+
+      if (ongoing.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+              <i class="fa-solid fa-folder-open text-4xl mb-3 block text-gray-300"></i>
+              No ongoing projects. Projects appear here when advance is received.
+            </td>
+          </tr>`;
+        countEl.textContent = 0;
+        return;
+      }
+
+      tbody.innerHTML = ongoing.map(project => `
+        <tr class="table-row">
+          <td class="px-6 py-4 font-medium text-gray-900" data-fulltext="${project.name}">${project.name}</td>
+          <td class="px-6 py-4 font-semibold text-gray-700" data-fulltext="₹${project.value.toLocaleString()}">₹${project.value.toLocaleString()}</td>
+          <td class="px-6 py-4 text-gray-600" data-fulltext="${project.location}">
+            <i class="fa-solid fa-location-dot text-teal-600 mr-1"></i> ${project.location}
+          </td>
+          <td class="px-6 py-4" data-fulltext="${project.team}">
+            <span class="inline-flex items-center gap-1 text-xs font-medium">
+              <i class="fa-solid fa-users text-gray-500"></i> ${project.team}
+            </span>
+          </td>
+          <td class="px-6 py-4">
+            <span class="status-badge ${getStatusColor(project.status)}">
+              ${project.status}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-center">
+            <button onclick="viewProject(${project.id})" class="text-teal-600 hover:text-teal-800">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      countEl.textContent = ongoing.length;
+    }
+
+    function getStatusColor(status) {
+      switch(status) {
+        case 'In Progress': return 'bg-blue-100 text-blue-700';
+        case 'Testing': return 'bg-purple-100 text-purple-700';
+        case 'On Hold': return 'bg-yellow-100 text-yellow-700';
+        default: return 'bg-gray-100 text-gray-700';
+      }
+    }
+
+    function viewProject(id) {
+      alert(`View project ID: ${id} (Navigate to detail page in production)`);
+    }
+
+    // Export to Excel
+    document.getElementById('exportBtn').addEventListener('click', function() {
+      const leads = JSON.parse(localStorage.getItem('leads')) || [];
+      const ongoing = leads.filter(lead => 
+        lead.advance === true && 
+        lead.status !== 'Won' && 
+        lead.status !== 'Lost'
+      );
+
+      const exportData = ongoing.map(p => ({
+        'Project Name': p.name,
+        'Value (₹)': p.value,
+        'Location': p.location,
+        'Assigned Team': p.team,
+        'Status': p.status
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Ongoing Projects");
+
+      // Auto-size columns
+      const colWidths = [
+        { wch: 30 }, // Project Name
+        { wch: 15 }, // Value
+        { wch: 18 }, // Location
+        { wch: 18 }, // Team
+        { wch: 12 }  // Status
+      ];
+      ws['!cols'] = colWidths;
+
+      XLSX.writeFile(wb, `Ongoing_Projects_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+
+    // Auto-refresh every 10 seconds
+    setInterval(renderOngoingProjects, 10000);
+    renderOngoingProjects();
+  </script>
+</body>
+</html>

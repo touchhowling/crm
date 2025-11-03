@@ -1,0 +1,121 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Pyenv
+.python-version
+
+# Environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Spyder project settings
+.spyderproject
+
+# VS Code
+.vscode/
+
+# IDEs
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+
+# Translations
+*.mo
+*.pot
+
+# Logs
+*.log
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Media and user-uploaded content
+media/
+
+# Django static and collectstatic
+staticfiles/
+# If you keep built static assets in repo, remove the previous line
+
+# Django local settings
+local_settings.py
+
+# Secret / environment files
+.env
+.env.*
+secret_key.txt
+
+# Celery
+celerybeat-schedule
+
+# Docker
+docker-compose.override.yml
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Others
+*.bak
+*.swp
+*~
+
+# node modules (if frontend present)
+node_modules/
+
+# Yarn
+.yarn/
+
+# dotenv local override
+.env.local

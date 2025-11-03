@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SecureTech AV Design CRM - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/index.html';
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    
+    /* Static status colors */
+    .status-new { background-color: #dbeafe; color: #1e40af; }
+    .status-contacted { background-color: #fef3c7; color: #92400e; }
+    .status-qualified { background-color: #d1fae5; color: #065f46; }
+    .status-proposal { background-color: #e0e7ff; color: #4338ca; }
+    .status-negotiation { background-color: #e9d5ff; color: #6b21a8; }
+    .status-won { background-color: #d1fae5; color: #065f46; }
+    .status-lost { background-color: #fee2e2; color: #991b1b; }
+
+    /* Toast */
+    #toast {
+      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+      padding: 1rem 1.5rem; border-radius: 0.5rem; color: white;
+      transform: translateX(400px); transition: transform 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    #toast.show { transform: translateX(0); }
+    .toast-success { background-color: #10b981; }
+    .toast-error { background-color: #ef4444; }
+    
+    @media (max-width: 1024px) {
+      aside { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease; 
+        position: fixed; 
+        z-index: 30; 
+      }
+      aside.open { transform: translateX(0); }
+      .ml-64 { margin-left: 0 !important; }
+    }
+    
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 25;
+    }
+    .sidebar-overlay.active { display: block; }
+    
+    .main-container {
+      height: calc(100vh - 56px);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <!-- Sidebar with Icons -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between z-30">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center gap-3 px-3">
+        <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-10 h-10 object-contain">
+        <h1 class="text-xl font-bold">SecureTech AV</h1>
+      </div>
+      <nav class="flex flex-col gap-1">
+        <a href="/leads" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-users w-5 text-center"></i>
+          Leads
+        </a>
+        <a href="#" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-left w-full font-medium">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+          Dashboard
+        </a>
+        <a href="/ongoing_projects" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+         <i class="fa-solid fa-diagram-project w-5 text-center"></i>
+          Ongoing Projects
+        </a>
+        <a href="/tasks" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-list-check w-5 text-center"></i>
+          Tasks
+        </a>
+        <a href="/inventory" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
+          Inventory
+        </a>
+        <a href="/accesscontrol" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-shield-halved w-5 text-center"></i>
+          Access Control
+        </a>
+        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
+          <i class="fa-solid fa-folder w-5 text-center"></i>
+          Files
+        </button>
+      </nav>
+    </div>
+    <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      New Lead
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="lg:ml-64">
+    <header class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <button id="menuToggle" class="lg:hidden text-gray-600 text-2xl">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="flex items-center gap-4 flex-1 justify-end flex-wrap">
+        <div class="relative flex-1 max-w-md">
+          <input type="text" placeholder="Search all..."
+            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <i class="fa-solid fa-search"></i>
+          </span>
+        </div>
+        <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
+          <i class="fa-solid fa-bell text-gray-600"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="flex items-center gap-2 cursor-pointer">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">S</div>
+          <div>
+            <p id="userName" class="text-sm font-semibold">Shivam</p>
+            <p id="userRole" class="text-xs text-gray-500">Admin</p>
+          </div>
+          <div class="relative group">
+            <i class="fa-solid fa-chevron-down text-xs text-gray-400 cursor-pointer"></i>
+            <!-- Dropdown menu -->
+            <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 hidden group-hover:block">
+              <div class="py-1">
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Profile</button>
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Settings</button>
+                <hr class="my-1 border-gray-100">
+                <button onclick="logout()" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-container p-4">
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
+        <span class="hover:text-blue-600 cursor-pointer">Home</span> / 
+        <span class="text-gray-900">Dashboard</span>
+      </div>
+
+      <h1 class="text-xl font-bold mb-4">Dashboard Overview</h1>
+
+      <!-- Compact Grid Layout -->
+      <div class="grid grid-cols-12 gap-4 h-[calc(100vh-180px)]">
+        
+        <!-- Left Column: KPIs + Leads -->
+        <div class="col-span-12 lg:col-span-3 flex flex-col gap-4">
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 mb-2">
+                <i class="fa-solid fa-indian-rupee-sign text-sm"></i>
+              </div>
+              <p class="text-xs text-gray-500 mb-0.5">Total Billing</p>
+              <p class="text-lg font-bold">₹50,000</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 mb-2">
+                <i class="fa-solid fa-percent text-sm"></i>
+              </div>
+              <p class="text-xs text-gray-500 mb-0.5">Conversion</p>
+              <p class="text-lg font-bold">33.3%</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 mb-2">
+                <i class="fa-solid fa-scale-balanced text-sm"></i>
+              </div>
+              <p class="text-xs text-gray-500 mb-0.5">Avg. Deal</p>
+              <p class="text-lg font-bold">₹25,000</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div class="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center text-pink-600 mb-2">
+                <i class="fa-solid fa-trophy text-sm"></i>
+              </div>
+              <p class="text-xs text-gray-500 mb-0.5">Win Rate</p>
+              <p class="text-lg font-bold">50%</p>
+            </div>
+          </div>
+
+          <!-- Leads Distribution -->
+          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex-1">
+            <h2 class="text-sm font-semibold mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-users text-blue-600 text-xs"></i> Leads Distribution
+            </h2>
+
+            <div class="flex items-center gap-3">
+              <div class="flex-1 space-y-2">
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span class="text-xs">Won</span>
+                  </div>
+                  <span class="font-bold text-xs">2</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    <span class="text-xs">Qualified</span>
+                  </div>
+                  <span class="font-bold text-xs">2</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                    <span class="text-xs">Proposal</span>
+                  </div>
+                  <span class="font-bold text-xs">1</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                    <span class="text-xs">Negotiation</span>
+                  </div>
+                  <span class="font-bold text-xs">1</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <span class="text-xs">New</span>
+                  </div>
+                  <span class="font-bold text-xs">1</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                    <span class="text-xs">Contacted</span>
+                  </div>
+                  <span class="font-bold text-xs">1</span>
+                </div>
+              </div>
+
+              <div class="w-28 h-28 flex-shrink-0">
+                <canvas id="statusPieChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Column: Top Leads Table -->
+        <div class="col-span-12 lg:col-span-5 bg-white p-4 rounded-lg shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+          <h2 class="text-sm font-semibold mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-star text-yellow-500 text-xs"></i> Top Leads
+          </h2>
+          <div class="overflow-auto flex-1">
+            <table class="w-full text-xs">
+              <thead class="bg-gray-50 sticky top-0">
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Lead</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Company</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Value</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Contact</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-medium">Acme Corp</td>
+                  <td class="px-3 py-2 text-gray-600">Tech Solutions</td>
+                  <td class="px-3 py-2 font-semibold">₹1,20,000</td>
+                  <td class="px-3 py-2">
+                    <span class="status-badge bg-purple-100 text-purple-700">Proposal</span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">2d ago</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-medium">Global Systems</td>
+                  <td class="px-3 py-2 text-gray-600">Enterprise Ltd</td>
+                  <td class="px-3 py-2 font-semibold">₹1,00,000</td>
+                  <td class="px-3 py-2">
+                    <span class="status-badge bg-yellow-100 text-yellow-700">Qualified</span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">1w ago</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-medium">NexGen Tech</td>
+                  <td class="px-3 py-2 text-gray-600">Innovation Hub</td>
+                  <td class="px-3 py-2 font-semibold">₹90,000</td>
+                  <td class="px-3 py-2">
+                    <span class="status-badge bg-indigo-100 text-indigo-700">Negotiation</span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">3d ago</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-medium">Skyline Builders</td>
+                  <td class="px-3 py-2 text-gray-600">Real Estate</td>
+                  <td class="px-3 py-2 font-semibold">₹30,000</td>
+                  <td class="px-3 py-2">
+                    <span class="status-badge bg-green-100 text-green-700">Won</span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">5d ago</td>
+                </tr>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 font-medium">Fusion Labs</td>
+                  <td class="px-3 py-2 text-gray-600">R&D Center</td>
+                  <td class="px-3 py-2 font-semibold">₹20,000</td>
+                  <td class="px-3 py-2">
+                    <span class="status-badge bg-green-100 text-green-700">Won</span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-500">1w ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Revenue Chart -->
+        <div class="col-span-12 lg:col-span-4 bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col">
+          <h2 class="text-sm font-semibold mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-blue-600 text-xs"></i> Revenue Trend
+          </h2>
+          <div class="flex-1">
+            <canvas id="revenueBarChart"></canvas>
+          </div>
+          <p class="text-xs text-center text-gray-500 mt-2">created by <span class="font-semibold text-blue-600">crest media tech</span></p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    });
+
+    const statusCount = {
+      'Won': 2,
+      'Qualified': 2,
+      'Proposal': 1,
+      'Negotiation': 1,
+      'New': 1,
+      'Contacted': 1
+    };
+
+    const pieLabels = Object.keys(statusCount);
+    const pieData = Object.values(statusCount);
+    const pieColors = ['#10B981', '#F59E0B', '#8B5CF6', '#6366F1', '#3B82F6', '#F97316'];
+
+    new Chart(document.getElementById('statusPieChart'), {
+      type: 'doughnut',
+      data: {
+        labels: pieLabels,
+        datasets: [{
+          data: pieData,
+          backgroundColor: pieColors,
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: ${ctx.raw}`
+            }
+          }
+        },
+        cutout: '60%'
+      }
+    });
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const revenueData = [45000, 38000, 52000, 48000, 61000, 55000, 70000, 68000, 72000, 65000, 80000, 50000];
+
+    new Chart(document.getElementById('revenueBarChart'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Revenue',
+          data: revenueData,
+          backgroundColor: '#3B82F6',
+          borderRadius: 4,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1F2937',
+            padding: 8,
+            bodyFont: { size: 11 },
+            callbacks: {
+              label: ctx => `₹${ctx.raw.toLocaleString()}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#6B7280', font: { size: 10 } }
+          },
+          y: {
+            grid: { display: false },
+            beginAtZero: true,
+            ticks: {
+              callback: value => '₹' + (value / 1000) + 'k',
+              color: '#6B7280',
+              font: { size: 10 }
+            }
+          }
+        }
+      }
+    });
+    // Enforce login: redirect to login page if no token
+
+  </script>
+</body>
+</html>
