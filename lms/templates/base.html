@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tasks - SecureTech AV CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    
+    /* Static status colors */
+    .priority-high { background-color: #fee2e2; color: #991b1b; }
+    .priority-medium { background-color: #fef3c7; color: #92400e; }
+    .priority-low { background-color: #d1fae5; color: #065f46; }
+
+    /* Toast */
+    #toast {
+      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+      padding: 1rem 1.5rem; border-radius: 0.5rem; color: white;
+      transform: translateX(400px); transition: transform 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    #toast.show { transform: translateX(0); }
+    .toast-success { background-color: #10b981; }
+    .toast-error { background-color: #ef4444; }
+
+    /* Responsive Sidebar */
+    @media (max-width: 1024px) {
+      aside { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease; 
+        position: fixed; 
+        z-index: 30; 
+      }
+      aside.open { transform: translateX(0); }
+      .ml-64 { margin-left: 0 !important; }
+    }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 25;
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* Custom checkbox */
+    .custom-checkbox {
+      width: 1.2rem;
+      height: 1.2rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .custom-checkbox:checked {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    /* Table styles */
+    tbody tr:hover { background-color: #f9fafb; }
+
+    /* Mobile improvements */
+    @media (max-width: 640px) {
+      .header-actions { 
+        display: flex; 
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .search-mobile { width: 100%; }
+      #toast { 
+        right: 0.5rem; 
+        left: 0.5rem; 
+        top: 0.5rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+      }
+    }
+  .fade-out {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+  }
+.modal {
+display: none;
+position: fixed;
+z-index: 50;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+overflow: auto;
+background-color: rgba(0,0,0,0.5);
+animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+.modal-content {
+background-color: white;
+border-radius: 1rem;
+width: 90%;
+max-width: 600px;
+max-height: 90vh;
+overflow-y: auto;
+animation: slideDown 0.3s ease;
+}
+
+@keyframes fadeIn {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+
+@keyframes slideDown {
+from {
+transform: translateY(-50px);
+opacity: 0;
+}
+to {
+transform: translateY(0);
+opacity: 1;
+}
+}
+
+/* Responsive Sidebar */
+@media (max-width: 1024px) {
+aside {
+transform: translateX(-100%);
+transition: transform 0.3s ease;
+position: fixed;
+z-index: 30;
+}
+aside.open { transform: translateX(0); }
+.lg\\:ml-64 { margin-left: 0 !important; }
+}
+
+.sidebar-overlay {
+display: none;
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.5);
+z-index: 25;
+}
+.sidebar-overlay.active { display: block; }
+
+td, th {
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width: 200px;
+}
+
+th:nth-child(1), td:nth-child(1) { min-width: 200px; }
+th:nth-child(2), td:nth-child(2) { min-width: 150px; }
+th:nth-child(3), td:nth-child(3) { min-width: 140px; }
+th:nth-child(4), td:nth-child(4) { min-width: 200px; }
+th:nth-child(5), td:nth-child(5) { min-width: 150px; }
+th:nth-child(6), td:nth-child(6) { min-width: 90px; }
+
+/* Status dropdown styling */
+.status-select {
+border: none;
+background: transparent;
+font-size: 0.75rem;
+font-weight: 500;
+padding: 0.25rem 0.5rem;
+border-radius: 9999px;
+cursor: pointer;
+outline: none;
+}
+
+.status-select:focus {
+box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- Toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- Sidebar Overlay for Mobile -->
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <!-- Sidebar with Icons -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between z-30">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center gap-3 px-3">
+        <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-10 h-10 object-contain">
+        <h1 class="text-xl font-bold">SecureTech AV</h1>
+      </div>
+      <nav class="flex flex-col gap-1">
+  <a href="/leads/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/leads/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-users w-5 text-center"></i> Leads
+  </a>
+
+  <a href="/dashboard/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/dashboard/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+  </a>
+
+  <a href="/ongoing_projects/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/ongoing_projects/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-diagram-project w-5 text-center"></i> Ongoing Projects
+  </a>
+
+  <a href="/tasks/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/tasks/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-list-check w-5 text-center"></i> Tasks
+  </a>
+
+  <a href="/inventory/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/inventory/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Inventory
+  </a>
+
+  <a href="/accesscontrol/" 
+     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+            {% if '/accesscontrol/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+    <i class="fa-solid fa-shield-halved w-5 text-center"></i> Access Control
+  </a>
+</nav>
+
+    </div>
+    {% if request.user.is_superuser or is_admin%}
+    <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      New Task
+    </button>
+    {% endif %}
+  </aside>
+
+  <!-- Main Layout -->
+  <div class="lg:ml-64">
+    <!-- Header -->
+    <header class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+      <button id="menuToggle" class="lg:hidden text-gray-600 text-2xl">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="flex items-center gap-4 flex-1 justify-end flex-wrap">
+        <div class="relative flex-1 max-w-md">
+          <input type="text" placeholder="Search all..." 
+            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+<!-- Notification Dropdown -->
+<div class="relative group">
+  <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
+    <i class="fa-solid fa-bell text-gray-600"></i>
+    {% if unread_count > 0 %}
+      <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+    {% endif %}
+  </button>
+
+  <!-- Dropdown Content -->
+  <div class="hidden group-hover:block absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
+    <div class="p-3 border-b flex justify-between items-center">
+      <h3 class="font-semibold text-sm text-gray-700">Notifications</h3>
+      <a href="{% url 'notifications' %}" class="text-xs text-blue-600 hover:underline">View all</a>
+    </div>
+    <a href="{% url 'mark_notifications_read' %}" class="text-xs text-gray-500 hover:text-blue-600">Mark all read</a>
+    <div class="max-h-80 overflow-y-auto">
+      {% if notifications %}
+        {% for notif in notifications %}
+          <div class="px-4 py-3 text-sm border-b hover:bg-gray-50 {% if not notif.is_read %}bg-blue-50{% endif %}">
+            <p class="text-gray-800">{{ notif.message }}</p>
+            <p class="text-xs text-gray-500 mt-1">{{ notif.created_at|date:"M d, H:i" }}</p>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="p-4 text-sm text-gray-500 text-center">No notifications</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+        <div class="relative group flex items-center gap-2 cursor-pointer">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
+            {{ request.user.first_name|slice:":1"|upper|default:"U" }}
+          </div>
+          <div>
+            <p class="text-sm font-semibold">{{ request.user.get_full_name|default:request.user.username }}</p>
+            <p class="text-xs text-gray-500">{{ request.user.is_superuser|yesno:"Admin,User" }}</p>
+          </div>
+          <div class="relative">
+            <i class="fa-solid fa-chevron-down text-xs text-gray-400 cursor-pointer"></i>
+            <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 hidden group-hover:block">
+              <div class="py-1">
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Profile</button>
+                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Settings</button>
+                <hr class="my-1 border-gray-100">
+                <a href="/logout/" class="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">Logout</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+{% block main %}
+{% endblock %}
+
+<!-- Notifications Dropdown Script -->
+ <script>
+const wsUrl = `ws://${window.location.host}/ws/notifications/`;
+const socket = new WebSocket(wsUrl);
+
+socket.onopen = () => console.log("✅ WebSocket connected");
+socket.onclose = () => console.log("❌ WebSocket disconnected");
+
+socket.onmessage = function(e) {
+  const data = JSON.parse(e.data);
+  if (data.message) {
+    showToast(data.message);
+    addNotificationToDropdown(data.message);
+
+    // 🧠 If admin, refresh automatically after short delay
+    const isAdmin = "{{ request.user.is_superuser|yesno:'true,false' }}" === "true" || "{{ is_admin }}" === "True";
+    const isModalOpen = !document.getElementById("newTaskModal").classList.contains("hidden");
+    if (!isModalOpen || !isAdmin) {
+      // Only refresh for task updates, not all notifications
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    }
+  }
+};
+
+// --- 1️⃣ Auto popup toast for new notifications ---
+function showToast(message) {
+  const toast = document.createElement("div");
+  toast.className = `
+    fixed bottom-5 right-5 bg-blue-600 text-white text-sm font-medium
+    px-4 py-3 rounded-lg shadow-lg animate-slide-in z-50
+  `;
+  toast.innerHTML = `<i class="fa-solid fa-bell mr-2"></i>${message}`;
+  document.body.appendChild(toast);
+
+  // Auto disappear after 5s
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px)";
+    setTimeout(() => toast.remove(), 500);
+  }, 5000);
+}
+
+// --- 2️⃣ Add notification to dropdown dynamically ---
+function addNotificationToDropdown(message) {
+  const dropdown = document.querySelector(".max-h-80");
+  if (!dropdown) return;
+
+  const notif = document.createElement("div");
+  notif.className = "notif px-4 py-3 text-sm border-b bg-blue-50 hover:bg-gray-50 cursor-pointer";
+  notif.innerHTML = `
+    <p class="text-gray-800">${message}</p>
+    <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleString()}</p>
+  `;
+  dropdown.prepend(notif);
+
+  // Add red dot
+  const bell = document.querySelector(".fa-bell").parentElement;
+  if (bell && !bell.querySelector(".bg-red-500")) {
+    const dot = document.createElement("span");
+    dot.className = "absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full";
+    bell.appendChild(dot);
+  }
+
+  // Auto disappear after 10s for short-lived task notifications
+  setTimeout(() => {
+    notif.classList.add("fade-out");
+    setTimeout(() => notif.remove(), 800);
+  }, 10000);
+}
+
+// --- 3️⃣ Auto mark as read on hover/click ---
+document.addEventListener("mouseover", function(e) {
+  const dropdown = e.target.closest(".max-h-80");
+  if (!dropdown) return;
+
+  // Mark all as read when hovered
+  dropdown.querySelectorAll(".notif.bg-blue-50").forEach(el => {
+    el.classList.remove("bg-blue-50");
+  });
+
+  // Remove red dot from bell
+  const bellDot = document.querySelector(".fa-bell").parentElement.querySelector(".bg-red-500");
+  if (bellDot) bellDot.remove();
+});
+
+// --- Optional CSS animation for slide & fade ---
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in { animation: slide-in 0.3s ease-out; }
+
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+`;
+document.head.appendChild(style);
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  if (!tabButtons.length) return; // safety check
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const target = btn.dataset.tab;
+
+      // Remove active styles
+      tabButtons.forEach(b => b.classList.remove("border-blue-500", "text-blue-600"));
+      tabContents.forEach(tc => tc.classList.add("hidden"));
+
+      // Add to current
+      btn.classList.add("border-blue-500", "text-blue-600");
+      document.getElementById(target).classList.remove("hidden");
+    });
+  });
+
+  // Default tab
+  tabButtons[0].click();
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".mark-complete").forEach(checkbox => {
+    checkbox.addEventListener("change", async (e) => {
+      const taskId = e.target.dataset.taskId;
+      if (!taskId) return;
+
+      const isCompleted = e.target.checked;
+      const endpoint = isCompleted
+        ? `/task/${taskId}/complete/`
+        : `/task/${taskId}/incomplete/`;
+
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "X-CSRFToken": getCookie("csrftoken") },
+        });
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          showToast(isCompleted ? "✅ Task marked as completed!" : "↩️ Task marked as incomplete!");
+
+          // Smooth short delay, then refresh the page
+          setTimeout(() => window.location.reload(), 800);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      }
+    });
+  });
+
+  // --- Helper: Get CSRF Token ---
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+</script>
+
+{% block extra_scripts %}
+{% endblock %}
+
+</body>
+</html>

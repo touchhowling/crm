@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tasks - SecureTech AV CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    
+    /* Status badges */
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-completed { background-color: #d1fae5; color: #065f46; }
+    .status-overdue { background-color: #fee2e2; color: #991b1b; }
+    
+    /* Priority colors */
+    .priority-high { background-color: #fee2e2; color: #991b1b; }
+    .priority-medium { background-color: #fef3c7; color: #92400e; }
+    .priority-low { background-color: #d1fae5; color: #065f46; }
+
+    /* Toast */
+    #toast {
+      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+      padding: 1rem 1.5rem; border-radius: 0.5rem; color: white;
+      transform: translateX(400px); transition: transform 0.3s ease;
+    }
+    #toast.show { transform: translateX(0); }
+    .toast-success { background-color: #10b981; }
+
+    /* Notification Badge */
+    .notification-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background-color: #ef4444;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      min-width: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- Toast -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- Sidebar -->
+  <aside class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4">
+    <div class="flex flex-col gap-8 h-full">
+      <div class="flex items-center gap-3 px-3">
+        <img src="https://www.securetechav.com/image-5@2x.png" alt="Logo" class="w-10 h-10">
+        <h1 class="text-xl font-bold">SecureTech AV</h1>
+      </div>
+      <nav class="flex flex-col gap-1">
+        <a href="/leads/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50">
+          <i class="fa-solid fa-users w-5"></i> Leads
+        </a>
+        <a href="/dashboard/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50">
+          <i class="fa-solid fa-chart-pie w-5"></i> Dashboard
+        </a>
+        <a href="/ongoing_projects/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50">
+          <i class="fa-solid fa-diagram-project w-5"></i> Projects
+        </a>
+        <a href="/tasks/" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 font-medium">
+          <i class="fa-solid fa-list-check w-5"></i> Tasks
+        </a>
+        <a href="/notifications/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 relative">
+          <i class="fa-solid fa-bell w-5"></i> Notifications
+          <span id="notifBadge" class="notification-badge hidden">0</span>
+        </a>
+      </nav>
+      <button onclick="openNewTaskModal()" class="mt-auto w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600">
+        <i class="fa-solid fa-plus"></i> New Task
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="ml-64">
+    <header class="sticky top-0 z-10 bg-white border-b px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-4 flex-1 justify-end">
+        <div class="relative">
+          <button onclick="window.location.href='/notifications/'" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
+            <i class="fa-solid fa-bell text-gray-600"></i>
+            <span id="headerNotifBadge" class="notification-badge hidden">0</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">U</div>
+          <div>
+            <p class="text-sm font-semibold">Admin</p>
+            <p class="text-xs text-gray-500">Administrator</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-8">
+      <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+        <span>Home</span> / <span class="text-gray-900">Tasks</span>
+      </div>
+
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold">Task Management</h1>
+        <button onclick="openNewTaskModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600">
+          <i class="fa-solid fa-plus"></i> New Task
+        </button>
+      </div>
+
+      <!-- Task Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Pending Tasks</p>
+              <p class="text-2xl font-bold" id="pendingCount">0</p>
+            </div>
+            <i class="fa-solid fa-hourglass-half text-3xl text-yellow-500"></i>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Completed Tasks</p>
+              <p class="text-2xl font-bold" id="completedCount">0</p>
+            </div>
+            <i class="fa-solid fa-check-circle text-3xl text-green-500"></i>
+          </div>
+        </div>
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Overdue Tasks</p>
+              <p class="text-2xl font-bold text-red-600" id="overdueCount">0</p>
+            </div>
+            <i class="fa-solid fa-exclamation-triangle text-3xl text-red-500"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks Table -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="taskTableBody" class="divide-y divide-gray-200">
+              <!-- Tasks will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- New Task Modal -->
+  <div id="newTaskModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">Create New Task</h2>
+        <button onclick="closeNewTaskModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <form id="newTaskForm">
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Task Title *</label>
+            <input type="text" id="taskTitle" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="taskDescription" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Project *</label>
+            <select id="taskProject" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+              <option value="">Select Project</option>
+              <option value="1">Project Alpha</option>
+              <option value="2">Project Beta</option>
+              <option value="3">Project Gamma</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Assign To *</label>
+            <select id="taskAssignee" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+              <option value="">Select User</option>
+              <option value="1">Shivam</option>
+              <option value="2">John</option>
+              <option value="3">Alex</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Due Date</label>
+            <input type="datetime-local" id="taskDueDate" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-2">
+          <button type="button" onclick="closeNewTaskModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Sample task data
+    const tasks = [
+      { id: 1, title: 'Review installation plan', project: 'Project Alpha', assignee: 'Shivam', initial: 'S', dueDate: '2025-10-31', completed: false, overdue: true },
+      { id: 2, title: 'Order equipment', project: 'Project Beta', assignee: 'John', initial: 'J', dueDate: '2025-11-05', completed: false, overdue: false },
+      { id: 3, title: 'Schedule client meeting', project: 'Project Gamma', assignee: 'Alex', initial: 'A', dueDate: '2025-11-10', completed: true, overdue: false }
+    ];
+
+    function loadTasks() {
+      const tbody = document.getElementById('taskTableBody');
+      tbody.innerHTML = '';
+      
+      let pending = 0, completed = 0, overdue = 0;
+
+      tasks.forEach(task => {
+        const today = new Date().toISOString().split('T')[0];
+        const isOverdue = !task.completed && task.dueDate < today;
+        
+        if (task.completed) completed++;
+        else if (isOverdue) overdue++;
+        else pending++;
+
+        const statusClass = task.completed ? 'status-completed' : (isOverdue ? 'status-overdue' : 'status-pending');
+        const statusText = task.completed ? 'Completed' : (isOverdue ? 'Overdue' : 'Pending');
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 text-xs font-medium rounded-full ${statusClass}">${statusText}</span>
+            </td>
+            <td class="px-6 py-4">
+              <span class="${task.completed ? 'line-through text-gray-400' : ''}">${task.title}</span>
+            </td>
+            <td class="px-6 py-4 text-sm">${task.project}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm">${task.initial}</div>
+                <span class="text-sm">${task.assignee}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm">${new Date(task.dueDate).toLocaleDateString()}</td>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-2">
+                <button onclick="toggleTask(${task.id})" class="text-gray-400 hover:text-blue-600">
+                  <i class="fa-solid ${task.completed ? 'fa-rotate-left' : 'fa-check'}"></i>
+                </button>
+                <button class="text-gray-400 hover:text-red-600">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('pendingCount').textContent = pending;
+      document.getElementById('completedCount').textContent = completed;
+      document.getElementById('overdueCount').textContent = overdue;
+    }
+
+    function toggleTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        loadTasks();
+        showToast(task.completed ? 'Task marked as completed!' : 'Task reopened');
+      }
+    }
+
+    function openNewTaskModal() {
+      document.getElementById('newTaskModal').classList.remove('hidden');
+    }
+
+    function closeNewTaskModal() {
+      document.getElementById('newTaskModal').classList.add('hidden');
+      document.getElementById('newTaskForm').reset();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast-success show';
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    document.getElementById('newTaskForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      showToast('Task created successfully!');
+      closeNewTaskModal();
+    });
+
+    // Load notification count
+    function updateNotificationCount() {
+      const count = 3; // This would come from your API
+      if (count > 0) {
+        document.getElementById('notifBadge').textContent = count;
+        document.getElementById('notifBadge').classList.remove('hidden');
+        document.getElementById('headerNotifBadge').textContent = count;
+        document.getElementById('headerNotifBadge').classList.remove('hidden');
+      }
+    }
+
+    // Initialize
+    loadTasks();
+    updateNotificationCount();
+  </script>
+</body>
+</html>

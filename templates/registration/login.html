@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SecureTech AV CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center p-4">
+  
+  <div class="w-full max-w-md">
+    <!-- Logo and Title -->
+    <div class="text-center mb-8">
+      <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-20 h-20 mx-auto mb-4 bg-white rounded-full p-3 shadow-lg">
+      <h1 class="text-4xl font-bold text-white mb-2">SecureTech AV</h1>
+      <p class="text-blue-100">CRM Login</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Welcome Back</h2>
+      
+      <!-- Django Messages -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+            <i class="fa-solid {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Login Form -->
+      <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fa-solid fa-user mr-2"></i>Username
+          </label>
+          <input type="text" name="username" required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your username">
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fa-solid fa-lock mr-2"></i>Password
+          </label>
+          <input type="password" name="password" required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your password">
+        </div>
+
+        <button type="submit"
+          class="w-full bg-gradient-to-r from-blue-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl">
+          <i class="fa-solid fa-sign-in-alt mr-2"></i>Login
+        </button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-gray-500">
+        <p>Don't have an account? Contact your administrator</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-6 text-white text-sm">
+      <p>created by <span class="font-semibold">crest media tech</span></p>
+    </div>
+  </div>
+
+</body>
+</html>

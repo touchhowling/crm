@@ -1,342 +1,253 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tasks - SecureTech AV CRM</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  
-  <!-- SheetJS for Excel Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% extends "base.html" %}
+{% block main %}
+    <!-- Main Content -->
+    <main class="p-8">
+        <!-- Flash Messages -->
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+          {% for message in messages %}
+            <div 
+              class="flex items-center justify-between px-4 py-3 rounded-lg shadow-sm
+              {% if message.tags == 'success' %}
+                bg-green-50 border border-green-200 text-green-700
+              {% elif message.tags == 'error' %}
+                bg-red-50 border border-red-200 text-red-700
+              {% elif message.tags == 'warning' %}
+                bg-yellow-50 border border-yellow-200 text-yellow-700
+              {% else %}
+                bg-blue-50 border border-blue-200 text-blue-700
+              {% endif %}">
+              <div class="flex items-center gap-2">
+                {% if message.tags == 'success' %}
+                  <i class="fa-solid fa-circle-check"></i>
+                {% elif message.tags == 'error' %}
+                  <i class="fa-solid fa-circle-xmark"></i>
+                {% elif message.tags == 'warning' %}
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                {% else %}
+                  <i class="fa-solid fa-info-circle"></i>
+                {% endif %}
+                <span class="text-sm font-medium">{{ message }}</span>
+              </div>
+              <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
-  <script>
-    function logout() {
-      localStorage.removeItem('token');
-      window.location.href = '/index.html';
-    }
+    <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <span class="hover:text-blue-600 cursor-pointer">Home</span> /
+      <span class="text-gray-900">Tasks</span>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', function() {
-      // Menu Toggle for Mobile
-      const menuBtn = document.getElementById('menuToggle');
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      
-      menuBtn.addEventListener('click', () => {
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('active');
-      });
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">Task Management</h1>
+      {% if is_admin %}
+        <button id="newTaskBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i> New Task
+        </button>
+      {% endif %}
+    </div>
 
-      overlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
-      });
-
-      // Task Status Toggle
-      document.querySelectorAll('.task-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-          const row = this.closest('tr');
-          if (this.checked) {
-            row.classList.add('bg-gray-50');
-            row.querySelector('.task-title').classList.add('line-through', 'text-gray-400');
-          } else {
-            row.classList.remove('bg-gray-50');
-            row.querySelector('.task-title').classList.remove('line-through', 'text-gray-400');
-          }
-        });
-      });
-    });
-  </script>
-
-  <style>
-    body { font-family: 'Poppins', sans-serif; }
-    
-    /* Static status colors */
-    .priority-high { background-color: #fee2e2; color: #991b1b; }
-    .priority-medium { background-color: #fef3c7; color: #92400e; }
-    .priority-low { background-color: #d1fae5; color: #065f46; }
-
-    /* Toast */
-    #toast {
-      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
-      padding: 1rem 1.5rem; border-radius: 0.5rem; color: white;
-      transform: translateX(400px); transition: transform 0.3s ease;
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-    }
-    #toast.show { transform: translateX(0); }
-    .toast-success { background-color: #10b981; }
-    .toast-error { background-color: #ef4444; }
-
-    /* Responsive Sidebar */
-    @media (max-width: 1024px) {
-      aside { 
-        transform: translateX(-100%); 
-        transition: transform 0.3s ease; 
-        position: fixed; 
-        z-index: 30; 
-      }
-      aside.open { transform: translateX(0); }
-      .ml-64 { margin-left: 0 !important; }
-    }
-
-    /* Sidebar Overlay */
-    .sidebar-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 25;
-    }
-    .sidebar-overlay.active { display: block; }
-
-    /* Custom checkbox */
-    .custom-checkbox {
-      width: 1.2rem;
-      height: 1.2rem;
-      border: 2px solid #e5e7eb;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .custom-checkbox:checked {
-      background-color: #3b82f6;
-      border-color: #3b82f6;
-    }
-
-    /* Table styles */
-    tbody tr:hover { background-color: #f9fafb; }
-
-    /* Mobile improvements */
-    @media (max-width: 640px) {
-      .header-actions { 
-        display: flex; 
-        gap: 0.5rem;
-        flex-wrap: wrap;
-      }
-      .search-mobile { width: 100%; }
-      #toast { 
-        right: 0.5rem; 
-        left: 0.5rem; 
-        top: 0.5rem;
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-      }
-    }
-  </style>
-</head>
-<body class="min-h-screen bg-gray-50">
-
-  <!-- Toast -->
-  <div id="toast" class="hidden"></div>
-
-  <!-- Sidebar Overlay for Mobile -->
-  <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-  <!-- Sidebar with Icons -->
-  <aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-200 p-4 flex flex-col justify-between z-30">
-    <div class="flex flex-col gap-8">
-      <div class="flex items-center gap-3 px-3">
-        <img src="https://www.securetechav.com/image-5@2x.png" alt="SecureTech Logo" class="w-10 h-10 object-contain">
-        <h1 class="text-xl font-bold">SecureTech AV</h1>
-      </div>
-      <nav class="flex flex-col gap-1">
-        <a href="/leads/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-users w-5 text-center"></i>
-          Leads
-        </a>
-        <a href="/dashboard/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-chart-pie w-5 text-center"></i>
-          Dashboard
-        </a>
-        <a href="/ongoing_projects/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-diagram-project w-5 text-center"></i>
-          Ongoing Projects
-        </a>
-        <a href="#" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-left w-full font-medium">
-          <i class="fa-solid fa-list-check w-5 text-center"></i>
-          Tasks
-        </a>
-        <a href="/inventory/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i>
-          Inventory
-        </a>
-        <a href="/accesscontrol/" class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-shield-halved w-5 text-center"></i>
-          Access Control
-        </a>
-        <button class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-blue-50 text-left w-full text-gray-700">
-          <i class="fa-solid fa-folder w-5 text-center"></i>
-          Files
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button class="tab-btn text-gray-500 py-4 px-1 border-b-2 font-medium text-sm" data-tab="active">
+          Active <span class="ml-1 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs">{{ active_tasks|length }}</span>
+        </button>
+        <button class="tab-btn text-gray-500 py-4 px-1 border-b-2 font-medium text-sm" data-tab="completed">
+          Completed <span class="ml-1 bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs">{{ completed_tasks|length }}</span>
+        </button>
+        <button class="tab-btn text-gray-500 py-4 px-1 border-b-2 font-medium text-sm" data-tab="pending">
+          Pending <span class="ml-1 bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs">{{ pending_tasks|length }}</span>
         </button>
       </nav>
     </div>
-    <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center gap-2">
-      <i class="fa-solid fa-plus"></i>
-      New Task
-    </button>
-  </aside>
 
-  <!-- Main Layout -->
-  <div class="lg:ml-64">
-    <!-- Header -->
-    <header class="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-      <button id="menuToggle" class="lg:hidden text-gray-600 text-2xl">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-      <div class="flex items-center gap-4 flex-1 justify-end flex-wrap">
-        <div class="relative flex-1 max-w-md">
-          <input type="text" placeholder="Search all..." 
-            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        </div>
-        <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
-          <i class="fa-solid fa-bell text-gray-600"></i>
-          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-        <div class="flex items-center gap-2 cursor-pointer">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">S</div>
-          <div>
-            <p id="userName" class="text-sm font-semibold">Shivam</p>
-            <p id="userRole" class="text-xs text-gray-500">Admin</p>
-          </div>
-          <div class="relative group">
-            <i class="fa-solid fa-chevron-down text-xs text-gray-400 cursor-pointer"></i>
-            <!-- Dropdown menu -->
-            <div class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 hidden group-hover:block">
-              <div class="py-1">
-                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Profile</button>
-                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">Settings</button>
-                <hr class="my-1 border-gray-100">
-                <button onclick="logout()" class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50">Logout</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <!-- Active Tasks Table -->
+    <div id="active" class="tab-content">
+      {% include "lms/tasks_table.html" with task_list=active_tasks title="Active Tasks" %}
+    </div>
 
-    <!-- Main Content -->
-    <main class="p-8">
-      <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <span class="hover:text-blue-600 cursor-pointer">Home</span> / 
-        <span class="text-gray-900">Tasks</span>
-      </div>
+    <!-- Completed Tasks Table -->
+    <div id="completed" class="tab-content hidden">
+      {% include "lms/tasks_table.html" with task_list=completed_tasks title="Completed Tasks" %}
+    </div>
 
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Task Management</h1>
-        <div class="flex items-center gap-3">
-          <button id="exportExcelBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2">
-            <i class="fa-solid fa-file-excel"></i> Export Excel
-          </button>
-          <button id="newTaskBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i> New Task
-          </button>
-        </div>
-      </div>
+    <!-- Pending Tasks Table -->
+    <div id="pending" class="tab-content hidden">
+      {% include "lms/tasks_table.html" with task_list=pending_tasks title="Pending Tasks" %}
+    </div>
+  </main>
 
-      <!-- Tasks Table -->
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Task</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <!-- Task Row 1 -->
-              <tr>
-                <td class="px-6 py-4">
-                  <input type="checkbox" class="task-checkbox custom-checkbox">
-                </td>
-                <td class="px-6 py-4">
-                  <span class="task-title">Review installation plan for Project Alpha</span>
-                </td>
-                <td class="px-6 py-4 text-sm">Project Alpha</td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-sm">S</div>
-                    <span class="text-sm">Shivam</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-sm">Oct 31, 2025</td>
-                <td class="px-6 py-4">
-                  <span class="px-3 py-1 text-xs font-medium rounded-full priority-high">High</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-              
-              <!-- Task Row 2 -->
-              <tr>
-                <td class="px-6 py-4">
-                  <input type="checkbox" class="task-checkbox custom-checkbox">
-                </td>
-                <td class="px-6 py-4">
-                  <span class="task-title">Order equipment for Project Beta</span>
-                </td>
-                <td class="px-6 py-4 text-sm">Project Beta</td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-sm">J</div>
-                    <span class="text-sm">John</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-sm">Nov 5, 2025</td>
-                <td class="px-6 py-4">
-                  <span class="px-3 py-1 text-xs font-medium rounded-full priority-medium">Medium</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Task Row 3 -->
-              <tr>
-                <td class="px-6 py-4">
-                  <input type="checkbox" class="task-checkbox custom-checkbox">
-                </td>
-                <td class="px-6 py-4">
-                  <span class="task-title">Schedule client meeting for Project Gamma</span>
-                </td>
-                <td class="px-6 py-4 text-sm">Project Gamma</td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white text-sm">A</div>
-                    <span class="text-sm">Alex</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-sm">Nov 10, 2025</td>
-                <td class="px-6 py-4">
-                  <span class="px-3 py-1 text-xs font-medium rounded-full priority-low">Low</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-2">
-                    <button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button>
-                    <button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
   </div>
-</body>
-</html>
+
+  <!-- New Task Modal -->
+  <div id="newTaskModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold">New Task</h2>
+        <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form id="newTaskForm" method="POST" action="{% url 'add_task' %}">
+        {% csrf_token %}
+        <div class="space-y-4">
+          <div>
+            <label for="taskTitle" class="block text-sm font-medium text-gray-700">Title</label>
+            <input type="text" id="taskTitle" name="title" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          </div>
+          <div>
+            <label for="taskDescription" class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="taskDescription" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+          </div>
+          <div>
+            <label for="taskProject" class="block text-sm font-medium text-gray-700">Project</label>
+            <select id="taskProject" name="project" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+              <option value="">Select Project</option>
+              {% for project in projects %}
+              <option value="{{ project.id }}">{{ project.project_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="taskAssignee" class="block text-sm font-medium text-gray-700">Assign To</label>
+            <select id="taskAssignee" name="user" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+              <option value="">Select User</option>
+              {% for user in users %}
+              <option value="{{ user.id }}">{{ user.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="taskPriority" class="block text-sm font-medium text-gray-700">Priority</label>
+            <select id="taskPriority" name="priority" required
+                    class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2">
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskDueDate" class="block text-sm font-medium text-gray-700">Due Date</label>
+            <input type="datetime-local" id="taskDueDate" name="due_date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+          <button type="button" id="cancelBtn" class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Cancel</button>
+<button
+  type="submit"
+  class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+  onclick="setTimeout(() => window.location.reload(), 1500)"
+>
+  Create Task
+</button>        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Edit Task Modal -->
+<div id="editTaskModal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-2xl font-bold">Edit Task</h2>
+      <button id="closeEditModalBtn" class="text-gray-500 hover:text-gray-700">&times;</button>
+    </div>
+    <form id="editTaskForm" method="POST">
+      {% csrf_token %}
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Title</label>
+          <input type="text" id="editTaskTitle" name="title"
+                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea id="editTaskDescription" name="description" rows="3"
+                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+        </div>
+        <div>
+        <label class="block text-sm font-medium text-gray-700">Priority</label>
+        <select id="editTaskPriority" name="priority" required
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Due Date</label>
+          <input type="datetime-local" id="editTaskDueDate" name="due_date"
+                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button type="button" id="cancelEditBtn"
+                class="mr-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+          Cancel
+        </button>
+        <button type="submit"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+  <script>
+    document.getElementById('newTaskBtn').addEventListener('click', () => {
+      document.getElementById('newTaskModal').classList.remove('hidden');
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      document.getElementById('newTaskModal').classList.add('hidden');
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      document.getElementById('newTaskModal').classList.add('hidden');
+    });
+  </script>
+{% endblock %}
+
+
+{%block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const editModal = document.getElementById("editTaskModal");
+  const closeEditModalBtn = document.getElementById("closeEditModalBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const editForm = document.getElementById("editTaskForm");
+
+  // Close modal
+  closeEditModalBtn.addEventListener("click", () => editModal.classList.add("hidden"));
+  cancelEditBtn.addEventListener("click", () => editModal.classList.add("hidden"));
+
+  // Attach to each edit button
+  document.querySelectorAll("a.edit-task").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const taskId = btn.dataset.taskId;
+
+      // Fetch task data from backend
+      const response = await fetch(`/task/${taskId}/`);
+      const data = await response.json();
+
+      // Fill the modal inputs
+      document.getElementById("editTaskTitle").value = data.title;
+      document.getElementById("editTaskDescription").value = data.description;
+      document.getElementById("editTaskDueDate").value = data.due_date;
+      document.getElementById("editTaskPriority").value = data.priority;
+      // Set form action dynamically
+      editForm.action = `/task/${taskId}/edit/`;
+
+      // Show modal
+      editModal.classList.remove("hidden");
+    });
+  });
+});
+</script>
+{% endblock %}
+
