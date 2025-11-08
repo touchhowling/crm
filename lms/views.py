@@ -55,7 +55,7 @@ def logout_view(request):
 @login_required
 def leads_list(request):
     """Display list of all leads with search and filter capabilities"""
-    if request.user.is_superuser:
+    if request.user.is_superuser or request.user.groups.filter(name="admin").exists():
         leads = LeadSource.objects.all().order_by('-snapshot_d')
     else:
         leads = LeadSource.objects.filter(user=request.user).order_by('-snapshot_d')
