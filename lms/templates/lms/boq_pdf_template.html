@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>BOQ - {{ boq.invoice_number }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+        }
+        
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 15px;
+        }
+        
+        .header-left {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+        
+        .header-right {
+            display: table-cell;
+            width: 40%;
+            text-align: right;
+            vertical-align: top;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        
+        .company-details {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .invoice-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 5px;
+        }
+        
+        .invoice-number {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .info-section {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .bill-to {
+            display: table-cell;
+            width: 50%;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            vertical-align: top;
+        }
+        
+        .invoice-details {
+            display: table-cell;
+            width: 45%;
+            padding: 15px;
+            background-color: #eff6ff;
+            border-radius: 8px;
+            margin-left: 5%;
+            vertical-align: top;
+        }
+        
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .detail-row {
+            margin-bottom: 5px;
+        }
+        
+        .label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        thead {
+            background-color: #2563eb;
+            color: white;
+        }
+        
+        th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .stock-warning {
+            color: #dc2626;
+            font-size: 9px;
+            font-style: italic;
+        }
+        
+        .summary {
+            margin-top: 20px;
+            float: right;
+            width: 45%;
+        }
+        
+        .summary-row {
+            display: table;
+            width: 100%;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .summary-row.total {
+            border-top: 2px solid #2563eb;
+            border-bottom: 2px solid #2563eb;
+            font-weight: bold;
+            font-size: 14px;
+            color: #2563eb;
+            margin-top: 10px;
+        }
+        
+        .summary-label {
+            display: table-cell;
+            text-align: left;
+            padding-right: 20px;
+        }
+        
+        .summary-value {
+            display: table-cell;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .notes-section {
+            clear: both;
+            margin-top: 40px;
+            padding: 15px;
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+        }
+        
+        .notes-title {
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .terms {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+        
+        .terms-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .terms ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .terms li {
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="company-name">{{ company_name }}</div>
+            <div class="company-details">
+                {{ company_address }}<br>
+                Phone: {{ company_phone }}<br>
+                Email: {{ company_email }}<br>
+                {{ company_gst }}
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="invoice-title">QUOTATION</div>
+            <div class="invoice-number">{{ boq.invoice_number }}</div>
+            <div class="invoice-number">Date: {{ boq.created_at|date:"d/m/Y" }}</div>
+        </div>
+    </div>
+
+    <!-- Bill To & Invoice Details -->
+    <div class="info-section">
+        <div class="bill-to">
+            <div class="section-title">Bill To</div>
+            <div class="detail-row">
+                <strong>{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</strong>
+            </div>
+            <div class="detail-row">
+                Phone: {{ boq.lead_source.country_code }}{{ boq.lead_source.phone_number }}
+            </div>
+            {% if boq.lead_source.address %}
+            <div class="detail-row">
+                {{ boq.lead_source.address }}
+            </div>
+            {% endif %}
+            {% if boq.lead_source.city %}
+            <div class="detail-row">
+                {{ boq.lead_source.city }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="invoice-details">
+            <div class="section-title">Quote Details</div>
+            <div class="detail-row">
+                <span class="label">Quote Number:</span> {{ boq.invoice_number }}
+            </div>
+            <div class="detail-row">
+                <span class="label">Date:</span> {{ boq.created_at|date:"d M, Y" }}
+            </div>
+            <div class="detail-row">
+                <span class="label">Status:</span> {{ boq.get_status_display }}
+            </div>
+            <div class="detail-row">
+                <span class="label">Created By:</span> {{ boq.created_by.get_full_name|default:boq.created_by.username }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Items Table -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 8%;">Sr.No</th>
+                <th style="width: 35%;">Item Description</th>
+                <th style="width: 12%;" class="text-right">Unit Price</th>
+                <th style="width: 10%;" class="text-center">Qty</th>
+                <th style="width: 12%;" class="text-right">Discount</th>
+                <th style="width: 13%;" class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="text-center">{{ item.sr_no }}</td>
+                <td>
+                    {{ item.item_name }}
+                    {% if not item.has_sufficient_stock %}
+                    <br><span class="stock-warning">⚠ Only {{ item.available_quantity }} units in stock</span>
+                    {% endif %}
+                </td>
+                <td class="text-right">₹{{ item.unit_price|floatformat:2 }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td class="text-right">
+                    {% if item.discount_percentage > 0 %}
+                    {{ item.discount_percentage }}%<br>
+                    <span style="font-size: 9px; color: #666;">(₹{{ item.discount_amount|floatformat:2 }})</span>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+                <td class="text-right"><strong>₹{{ item.line_total|floatformat:2 }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Summary -->
+    <div class="summary">
+        <div class="summary-row">
+            <div class="summary-label">Subtotal:</div>
+            <div class="summary-value">₹{{ boq.subtotal|floatformat:2 }}</div>
+        </div>
+        
+        {% if boq.total_discount > 0 %}
+        <div class="summary-row" style="color: #dc2626;">
+            <div class="summary-label">Total Discount:</div>
+            <div class="summary-value">-₹{{ boq.total_discount|floatformat:2 }}</div>
+        </div>
+        {% endif %}
+        
+        {% if boq.overall_discount > 0 %}
+        <div class="summary-row" style="color: #dc2626;">
+            <div class="summary-label">Overall Discount ({{ boq.overall_discount_percentage }}%):</div>
+            <div class="summary-value">-₹{{ boq.overall_discount|floatformat:2 }}</div>
+        </div>
+        {% endif %}
+        
+        <div class="summary-row">
+            <div class="summary-label">Tax (GST {{ boq.tax_rate }}%):</div>
+            <div class="summary-value">₹{{ boq.total_tax|floatformat:2 }}</div>
+        </div>
+        
+        <div class="summary-row total">
+            <div class="summary-label">Grand Total:</div>
+            <div class="summary-value">₹{{ boq.grand_total|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Notes -->
+    {% if boq.notes %}
+    <div class="notes-section">
+        <div class="notes-title">Notes:</div>
+        <div>{{ boq.notes|linebreaks }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Terms & Conditions -->
+    <div class="terms">
+        <div class="terms-title">Terms & Conditions:</div>
+        <ul>
+            <li>This quotation is valid for 30 days from the date of issue.</li>
+            <li>Payment terms: 50% advance, 50% on completion.</li>
+            <li>Prices are inclusive of GST at {{ boq.tax_rate }}%.</li>
+            <li>Installation and commissioning charges are extra unless specified.</li>
+            <li>Warranty as per manufacturer's terms and conditions.</li>
+            <li>Any disputes are subject to local jurisdiction only.</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <strong>{{ company_name }}</strong><br>
+        {{ company_phone }} | {{ company_email }}<br>
+        Thank you for your business!
+    </div>
+</body>
+</html>

@@ -1,69 +1,565 @@
 {% extends "base.html" %}
-{% block title %}Inventory - SecureTech AV CRM{% endblock %}
+{% block title %}Inventory Management{% endblock %}
 
-{%block main %}
+{% block main %}
+<main class="p-8">
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="/dashboard/" class="hover:text-blue-600">Home</a> /
+    <span class="text-gray-900">Inventory</span>
+  </div>
 
-    <main class="p-8">
-      <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
-        <span class="hover:text-blue-600 cursor-pointer">Home</span> / 
-        <span class="text-gray-900">Inventory</span>
-      </div>
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-3xl font-bold mb-2">Inventory Management</h1>
+      <p class="text-gray-600">Track stock levels and order requirements</p>
+    </div>
+    <button id="addInventoryBtn" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2">
+      <i class="fa-solid fa-plus"></i>
+      Add Inventory Item
+    </button>
+  </div>
 
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Inventory</h1>
-        <div class="flex items-center gap-3">
-          <button id="exportExcelBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2">
-            <i class="fa-solid fa-file-excel"></i> Export Excel
-          </button>
-          <button id="newItemBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i> New Item
-          </button>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 mb-1">Total Items</p>
+          <p class="text-2xl font-bold">{{ items|length }}</p>
+        </div>
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <i class="fa-solid fa-boxes-stacked text-blue-600 text-xl"></i>
         </div>
       </div>
+    </div>
 
-      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 mb-1">Low Stock Items</p>
+          <p class="text-2xl font-bold text-orange-600">{{ low_stock_count }}</p>
+        </div>
+        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+          <i class="fa-solid fa-exclamation-triangle text-orange-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 mb-1">Out of Stock</p>
+          <p class="text-2xl font-bold text-red-600">{{ out_of_stock_count }}</p>
+        </div>
+        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+          <i class="fa-solid fa-box-open text-red-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-500 mb-1">To Be Ordered</p>
+          <p class="text-2xl font-bold text-purple-600">{{ total_to_order }}</p>
+        </div>
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+          <i class="fa-solid fa-cart-shopping text-purple-600 text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search -->
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-3 items-center">
+    <input type="text" id="searchInput" placeholder="Search inventory..." 
+      class="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+    
+    <select id="stockFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+      <option value="">All Stock Levels</option>
+      <option value="in-stock">In Stock</option>
+      <option value="low-stock">Low Stock (<10)</option>
+      <option value="out-of-stock">Out of Stock</option>
+    </select>
+
+    <button id="exportInventoryBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+      <i class="fa-solid fa-file-excel"></i>
+      Export Excel
+    </button>
+  </div>
+
+  <!-- Inventory Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table id="inventoryTable" class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">USP (₹)</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Available Qty</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">To Be Ordered</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for item in items %}
+          <tr class="hover:bg-gray-50 inventory-row" 
+              data-available="{{ item.available_quantity }}"
+              data-stock-status="{% if item.available_quantity == 0 %}out-of-stock{% elif item.available_quantity < 10 %}low-stock{% else %}in-stock{% endif %}">
+            <td class="px-6 py-4">
+              <div class="font-medium text-gray-900">{{ item.item_name }}</div>
+              {% if item.available_quantity < 10 %}
+              <div class="text-xs text-orange-600 mt-1">
+                <i class="fa-solid fa-exclamation-circle"></i> Low stock alert
+              </div>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-right font-semibold">₹{{ item.unit_selling_price|floatformat:2 }}</td>
+            <td class="px-6 py-4 text-center">
+              <span class="px-3 py-1 rounded-full text-sm font-medium
+                {% if item.available_quantity == 0 %}bg-red-100 text-red-700
+                {% elif item.available_quantity < 10 %}bg-orange-100 text-orange-700
+                {% else %}bg-green-100 text-green-700{% endif %}">
+                {{ item.available_quantity }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <span class="px-3 py-1 rounded-full text-sm font-medium {% if item.quantity_to_be_ordered > 0 %}bg-purple-100 text-purple-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                  {{ item.quantity_to_be_ordered }}
+                </span>
+                {% if item.quantity_to_be_ordered > 0 %}
+                <button onclick="showProjectRequirements({{ item.id }})" class="text-blue-600 hover:text-blue-800" title="View project requirements">
+                  <i class="fa-solid fa-info-circle"></i>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 text-center">
+              {% if item.available_quantity == 0 %}
+              <span class="px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-700">Out of Stock</span>
+              {% elif item.available_quantity < 10 %}
+              <span class="px-2 py-1 text-xs font-medium rounded bg-orange-100 text-orange-700">Low Stock</span>
+              {% else %}
+              <span class="px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700">In Stock</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-center">
+              <button onclick="editInventory({{ item.id }}, '{{ item.item_name|escapejs }}', {{ item.unit_selling_price }}, {{ item.available_quantity }}, {{ item.quantity_to_be_ordered }})" class="text-blue-600 hover:text-blue-800 mr-3" title="Edit item">
+                <i class="fa-solid fa-edit"></i>
+              </button>
+              <button onclick="updateStock({{ item.id }}, '{{ item.item_name|escapejs }}', {{ item.available_quantity }})" class="text-green-600 hover:text-green-800" title="Add stock">
+                <i class="fa-solid fa-plus-circle"></i>
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+              No inventory items yet. Click "Add Inventory Item" to get started.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Add Inventory Modal -->
+<div id="addInventoryModal" class="modal">
+  <div class="modal-content max-w-2xl">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Add Inventory Item</h2>
+        <button onclick="closeAddInventoryModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <form id="addInventoryForm" method="POST" action="{% url 'add_inventory_item' %}">
+        {% csrf_token %}
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Item Name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="item_name" required maxlength="200"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., HDMI Cable 2m">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Unit Selling Price (₹) <span class="text-red-500">*</span>
+            </label>
+            <input type="number" name="unit_selling_price" required step="0.01" min="0"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="0.00">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Available Quantity
+              </label>
+              <input type="number" name="available_quantity" min="0" value="0"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="0">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Quantity to be Ordered
+              </label>
+              <input type="number" name="quantity_to_be_ordered" min="0" value="0"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" onclick="closeAddInventoryModal()" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            Add Item
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Inventory Modal -->
+<div id="editInventoryModal" class="modal">
+  <div class="modal-content max-w-2xl">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Edit Inventory Item</h2>
+        <button onclick="closeEditInventoryModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <form id="editInventoryForm" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="item_id" id="editItemId">
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Item Name <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="item_name" id="editItemName" required maxlength="200"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Unit Selling Price (₹) <span class="text-red-500">*</span>
+            </label>
+            <input type="number" name="unit_selling_price" id="editItemPrice" required step="0.01" min="0"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Available Quantity
+              </label>
+              <input type="number" name="available_quantity" id="editAvailableQty" min="0"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Quantity to be Ordered
+              </label>
+              <input type="number" name="quantity_to_be_ordered" id="editOrderQty" min="0"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="button" onclick="closeEditInventoryModal()" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+            Update Item
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Project Requirements Modal -->
+<div id="projectRequirementsModal" class="modal">
+  <div class="modal-content max-w-4xl">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Order Requirements by Project</h2>
+        <button onclick="closeProjectRequirementsModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <div id="projectRequirementsContent">
+        <!-- Content loaded dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div id="updateStockModal" class="modal">
+  <div class="modal-content max-w-md">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Add Stock</h2>
+        <button onclick="closeUpdateStockModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <form id="updateStockForm" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="item_id" id="updateStockItemId">
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+          <input type="text" id="updateStockItemName" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Current Available Quantity</label>
+          <input type="number" id="currentQty" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Add Quantity <span class="text-red-500">*</span>
+          </label>
+          <input type="number" name="add_quantity" id="addQuantity" min="1" required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p class="text-sm text-blue-800">
+            <strong>New Quantity:</strong> <span id="newQuantityDisplay">0</span>
+          </p>
+        </div>
+
+        <div class="flex gap-3">
+          <button type="button" onclick="closeUpdateStockModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Update Stock
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Search and filter functionality
+const searchInput = document.getElementById('searchInput');
+const stockFilter = document.getElementById('stockFilter');
+const inventoryRows = document.querySelectorAll('.inventory-row');
+
+function applyFilters() {
+  const searchQuery = searchInput.value.toLowerCase();
+  const stockStatus = stockFilter.value;
+
+  inventoryRows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const status = row.dataset.stockStatus;
+
+    const matchesSearch = !searchQuery || text.includes(searchQuery);
+    const matchesFilter = !stockStatus || status === stockStatus;
+
+    row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+  });
+}
+
+searchInput.addEventListener('input', applyFilters);
+stockFilter.addEventListener('change', applyFilters);
+
+// Add Inventory Modal
+document.getElementById('addInventoryBtn').addEventListener('click', () => {
+  document.getElementById('addInventoryModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+});
+
+function closeAddInventoryModal() {
+  document.getElementById('addInventoryModal').classList.remove('show');
+  document.getElementById('addInventoryForm').reset();
+  document.body.style.overflow = 'auto';
+}
+
+// Edit Inventory Modal
+function editInventory(id, name, price, availableQty, orderQty) {
+  document.getElementById('editItemId').value = id;
+  document.getElementById('editItemName').value = name;
+  document.getElementById('editItemPrice').value = price;
+  document.getElementById('editAvailableQty').value = availableQty;
+  document.getElementById('editOrderQty').value = orderQty;
+  
+  document.getElementById('editInventoryForm').action = `/inventory/${id}/update/`;
+  document.getElementById('editInventoryModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEditInventoryModal() {
+  document.getElementById('editInventoryModal').classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+
+// Update Stock Modal
+function updateStock(itemId, itemName, currentQty) {
+  document.getElementById('updateStockItemId').value = itemId;
+  document.getElementById('updateStockItemName').value = itemName;
+  document.getElementById('currentQty').value = currentQty;
+  document.getElementById('addQuantity').value = '';
+  document.getElementById('newQuantityDisplay').textContent = currentQty;
+  
+  document.getElementById('updateStockForm').action = `/inventory/${itemId}/update/`;
+  document.getElementById('updateStockModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+// Calculate new quantity
+document.getElementById('addQuantity')?.addEventListener('input', function() {
+  const current = parseInt(document.getElementById('currentQty').value) || 0;
+  const add = parseInt(this.value) || 0;
+  document.getElementById('newQuantityDisplay').textContent = current + add;
+});
+
+function closeUpdateStockModal() {
+  document.getElementById('updateStockModal').classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+
+// Show project requirements
+async function showProjectRequirements(itemId) {
+  const modal = document.getElementById('projectRequirementsModal');
+  const content = document.getElementById('projectRequirementsContent');
+  
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  content.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600"></i></div>';
+
+  try {
+    const response = await fetch(`/api/inventory/${itemId}/requirements/`);
+    const data = await response.json();
+
+    if (data.requirements && data.requirements.length > 0) {
+      content.innerHTML = `
+        <div class="mb-4">
+          <h3 class="font-semibold text-lg mb-2">${data.item_name}</h3>
+          <p class="text-sm text-gray-600">Total required: <span class="font-bold text-red-600">${data.total_required}</span> units</p>
+        </div>
         <div class="overflow-x-auto">
-          <table id="inventoryTable" class="w-full">
+          <table class="w-full text-sm">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th class="px-4 py-2 text-left">Project</th>
+                <th class="px-4 py-2 text-center">BOQ Number</th>
+                <th class="px-4 py-2 text-center">Required</th>
+                <th class="px-4 py-2 text-center">Available</th>
+                <th class="px-4 py-2 text-center">Shortage</th>
+                <th class="px-4 py-2 text-center">Status</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200">
-              <tr>
-                <td class="px-6 py-4">AV Receiver - Yamaha RXV</td>
-                <td class="px-6 py-4 text-sm">YRX-1234</td>
-                <td class="px-6 py-4 text-sm">12</td>
-                <td class="px-6 py-4 text-sm">Warehouse A</td>
-                <td class="px-6 py-4"><span class="px-3 py-1 text-xs font-medium rounded-full status-instock">In Stock</span></td>
-                <td class="px-6 py-4"><div class="flex items-center gap-2"><button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button><button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></div></td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4">Projector - Epson Pro</td>
-                <td class="px-6 py-4 text-sm">EP-9876</td>
-                <td class="px-6 py-4 text-sm">3</td>
-                <td class="px-6 py-4 text-sm">Warehouse B</td>
-                <td class="px-6 py-4"><span class="px-3 py-1 text-xs font-medium rounded-full status-low">Low</span></td>
-                <td class="px-6 py-4"><div class="flex items-center gap-2"><button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button><button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></div></td>
-              </tr>
-              <tr>
-                <td class="px-6 py-4">Cables - HDMI 10m</td>
-                <td class="px-6 py-4 text-sm">HD-10M</td>
-                <td class="px-6 py-4 text-sm">0</td>
-                <td class="px-6 py-4 text-sm">Warehouse A</td>
-                <td class="px-6 py-4"><span class="px-3 py-1 text-xs font-medium rounded-full status-out">Out</span></td>
-                <td class="px-6 py-4"><div class="flex items-center gap-2"><button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-pen-to-square"></i></button><button class="text-gray-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></div></td>
-              </tr>
+            <tbody class="divide-y">
+              ${data.requirements.map(req => `
+                <tr>
+                  <td class="px-4 py-3">${req.project_name}</td>
+                  <td class="px-4 py-3 text-center">${req.boq_number}</td>
+                  <td class="px-4 py-3 text-center font-semibold">${req.required_qty}</td>
+                  <td class="px-4 py-3 text-center">${req.available_qty}</td>
+                  <td class="px-4 py-3 text-center text-red-600 font-bold">${req.shortage_qty}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="px-2 py-1 text-xs rounded ${
+                      req.status === 'received' ? 'bg-green-100 text-green-700' :
+                      req.status === 'ordered' ? 'bg-blue-100 text-blue-700' :
+                      'bg-orange-100 text-orange-700'
+                    }">
+                      ${req.status}
+                    </span>
+                  </td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
-      </div>
-    </main>
-    {% endblock %}
- {% block extra_scripts %}
- {% endblock %}
+      `;
+    } else {
+      content.innerHTML = '<div class="text-center py-8 text-gray-500">No project requirements found</div>';
+    }
+  } catch (error) {
+    content.innerHTML = '<div class="text-center py-8 text-red-500">Error loading requirements</div>';
+  }
+}
+
+function closeProjectRequirementsModal() {
+  document.getElementById('projectRequirementsModal').classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+
+// Export to Excel
+document.getElementById('exportInventoryBtn')?.addEventListener('click', () => {
+  const wb = XLSX.utils.table_to_book(document.getElementById('inventoryTable'), {sheet: "Inventory"});
+  XLSX.writeFile(wb, `Inventory_${new Date().toISOString().slice(0,10)}.xlsx`);
+});
+
+// Modal close on outside click
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
+  });
+});
+</script>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 50;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 1rem;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+</style>
+{% endblock %}

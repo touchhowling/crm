@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}BOQ - {{ boq.invoice_number }}{% endblock %}
+
+{% block main %}
+<main class="p-8">
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="/dashboard/" class="hover:text-blue-600">Home</a> /
+    <a href="/leads/" class="hover:text-blue-600">Leads</a> /
+    <a href="/lead/{{ boq.lead_source.id }}/" class="hover:text-blue-600">{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</a> /
+    <span class="text-gray-900">{{ boq.invoice_number }}</span>
+  </div>
+
+  <!-- Header -->
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h1 class="text-3xl font-bold mb-2">{{ boq.invoice_number }}</h1>
+      <p class="text-gray-600">Created on {{ boq.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+    <div class="flex gap-3">
+      <form method="POST" action="{% url 'change_boq_status' boq.id %}" class="inline">
+        {% csrf_token %}
+        <select name="status" onchange="this.form.submit()" 
+          class="px-4 py-2 border border-gray-300 rounded-lg font-medium
+          {% if boq.status == 'approved' %}bg-green-100 text-green-700
+          {% elif boq.status == 'sent' %}bg-blue-100 text-blue-700
+          {% elif boq.status == 'rejected' %}bg-red-100 text-red-700
+          {% else %}bg-gray-100 text-gray-700{% endif %}">
+          <option value="draft" {% if boq.status == 'draft' %}selected{% endif %}>Draft</option>
+          <option value="sent" {% if boq.status == 'sent' %}selected{% endif %}>Sent</option>
+          <option value="approved" {% if boq.status == 'approved' %}selected{% endif %}>Approved</option>
+          <option value="rejected" {% if boq.status == 'rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+      </form>
+      
+      {% if boq.status != 'approved' %}
+      <a href="/boq/{{ boq.id }}/edit/" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2">
+        <i class="fa-solid fa-edit"></i> Edit
+      </a>
+      {% endif %}
+      
+      <a href="{% url 'download_boq_pdf' boq.id %}" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
+        <i class="fa-solid fa-download"></i> Download PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Customer Info -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h3 class="font-semibold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-user text-blue-600"></i>
+        Customer Information
+      </h3>
+      <dl class="space-y-3 text-sm">
+        <div>
+          <dt class="text-gray-500">Name</dt>
+          <dd class="font-medium">{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Phone</dt>
+          <dd class="font-medium">{{ boq.lead_source.country_code }}{{ boq.lead_source.phone_number }}</dd>
+        </div>
+        {% if boq.lead_source.city %}
+        <div>
+          <dt class="text-gray-500">City</dt>
+          <dd class="font-medium">{{ boq.lead_source.city }}</dd>
+        </div>
+        {% endif %}
+        {% if boq.lead_source.address %}
+        <div>
+          <dt class="text-gray-500">Address</dt>
+          <dd class="font-medium">{{ boq.lead_source.address }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- BOQ Details -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <h3 class="font-semibold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-file-invoice text-green-600"></i>
+        BOQ Details
+      </h3>
+      <dl class="space-y-3 text-sm">
+        <div>
+          <dt class="text-gray-500">Invoice Number</dt>
+          <dd class="font-medium">{{ boq.invoice_number }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Tax Rate</dt>
+          <dd class="font-medium">{{ boq.tax_rate }}% GST</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Created By</dt>
+          <dd class="font-medium">{{ boq.created_by.get_full_name|default:boq.created_by.username }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Last Updated</dt>
+          <dd class="font-medium">{{ boq.updated_at|date:"M d, Y H:i" }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Summary -->
+    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-sm border border-blue-200 p-6">
+      <h3 class="font-semibold mb-4 flex items-center gap-2 text-blue-800">
+        <i class="fa-solid fa-calculator"></i>
+        Financial Summary
+      </h3>
+      <dl class="space-y-3 text-sm">
+        <div class="flex justify-between">
+          <dt class="text-blue-700">Subtotal</dt>
+          <dd class="font-semibold text-blue-900">₹{{ boq.subtotal|floatformat:2 }}</dd>
+        </div>
+        {% if boq.total_discount > 0 %}
+        <div class="flex justify-between">
+          <dt class="text-red-700">Total Discount</dt>
+          <dd class="font-semibold text-red-900">-₹{{ boq.total_discount|floatformat:2 }}</dd>
+        </div>
+        {% endif %}
+        <div class="flex justify-between">
+          <dt class="text-blue-700">Tax ({{ boq.tax_rate }}%)</dt>
+          <dd class="font-semibold text-blue-900">₹{{ boq.total_tax|floatformat:2 }}</dd>
+        </div>
+        <div class="flex justify-between pt-3 border-t-2 border-blue-300">
+          <dt class="font-bold text-blue-800">Grand Total</dt>
+          <dd class="font-bold text-2xl text-blue-900">₹{{ boq.grand_total|floatformat:2 }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+    <div class="p-6 border-b">
+      <h2 class="text-xl font-bold flex items-center gap-2">
+        <i class="fa-solid fa-list text-blue-600"></i>
+        Items
+      </h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sr.No</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qty</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Discount</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Line Total</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for item in items %}
+          <tr class="{% if not item.has_sufficient_stock %}bg-red-50{% else %}hover:bg-gray-50{% endif %}">
+            <td class="px-6 py-4 text-center">{{ item.sr_no }}</td>
+            <td class="px-6 py-4">
+              <div class="font-medium">{{ item.item_name }}</div>
+              {% if not item.has_sufficient_stock %}
+              <div class="text-xs text-red-600 mt-1">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                Only {{ item.available_quantity }} units available in stock
+              </div>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-right">₹{{ item.unit_price|floatformat:2 }}</td>
+            <td class="px-6 py-4 text-center font-medium">{{ item.quantity }}</td>
+            <td class="px-6 py-4 text-right">
+              {% if item.discount_percentage > 0 %}
+              <div class="font-medium text-red-600">{{ item.discount_percentage }}%</div>
+              <div class="text-xs text-gray-500">(-₹{{ item.discount_amount|floatformat:2 }})</div>
+              {% else %}
+              <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-right font-bold text-blue-600">₹{{ item.line_total|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="bg-gray-50">
+          <tr>
+            <td colspan="5" class="px-6 py-4 text-right font-semibold">Subtotal:</td>
+            <td class="px-6 py-4 text-right font-bold">₹{{ boq.subtotal|floatformat:2 }}</td>
+          </tr>
+          {% if boq.overall_discount > 0 %}
+          <tr>
+            <td colspan="5" class="px-6 py-3 text-right font-semibold text-red-700">
+              Overall Discount ({{ boq.overall_discount_percentage }}%):
+            </td>
+            <td class="px-6 py-3 text-right font-bold text-red-700">-₹{{ boq.overall_discount|floatformat:2 }}</td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td colspan="5" class="px-6 py-3 text-right font-semibold">Tax ({{ boq.tax_rate }}% GST):</td>
+            <td class="px-6 py-3 text-right font-bold">₹{{ boq.total_tax|floatformat:2 }}</td>
+          </tr>
+          <tr class="bg-blue-50">
+            <td colspan="5" class="px-6 py-4 text-right text-lg font-bold text-blue-800">Grand Total:</td>
+            <td class="px-6 py-4 text-right text-xl font-bold text-blue-900">₹{{ boq.grand_total|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  {% if boq.notes %}
+  <div class="bg-yellow-50 rounded-xl shadow-sm border border-yellow-200 p-6 mb-6">
+    <h3 class="font-semibold mb-3 flex items-center gap-2 text-yellow-800">
+      <i class="fa-solid fa-sticky-note"></i>
+      Notes
+    </h3>
+    <p class="text-gray-700 whitespace-pre-wrap">{{ boq.notes }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="flex gap-3 justify-end">
+    <a href="/lead/{{ boq.lead_source.id }}/" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+      Back to Lead
+    </a>
+    {% if boq.status != 'approved' %}
+    <form method="POST" action="{% url 'delete_boq' boq.id %}" onsubmit="return confirm('Are you sure you want to delete this BOQ?')" class="inline">
+      {% csrf_token %}
+      <button type="submit" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+        <i class="fa-solid fa-trash"></i> Delete BOQ
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

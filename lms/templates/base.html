@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  {% block title %}{% endblock %}
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -82,106 +81,149 @@
         font-size: 0.875rem;
       }
     }
-  .fade-out {
-    opacity: 0;
-    transform: translateX(20px);
-    transition: all 0.3s ease;
-  }
-.modal {
-display: none;
-position: fixed;
-z-index: 50;
-left: 0;
-top: 0;
-width: 100%;
-height: 100%;
-overflow: auto;
-background-color: rgba(0,0,0,0.5);
-animation: fadeIn 0.3s ease;
-}
 
-.modal.show {
-display: flex;
-align-items: center;
-justify-content: center;
-}
+    .fade-out {
+      opacity: 0;
+      transform: translateX(20px);
+      transition: all 0.3s ease;
+    }
 
-.modal-content {
-background-color: white;
-border-radius: 1rem;
-width: 90%;
-max-width: 600px;
-max-height: 90vh;
-overflow-y: auto;
-animation: slideDown 0.3s ease;
-}
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 50;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      animation: fadeIn 0.3s ease;
+    }
 
-@keyframes fadeIn {
-from { opacity: 0; }
-to { opacity: 1; }
-}
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-@keyframes slideDown {
-from {
-transform: translateY(-50px);
-opacity: 0;
-}
-to {
-transform: translateY(0);
-opacity: 1;
-}
-}
+    .modal-content {
+      background-color: white;
+      border-radius: 1rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideDown 0.3s ease;
+    }
 
-/* Responsive Sidebar */
-@media (max-width: 1024px) {
-aside {
-transform: translateX(-100%);
-transition: transform 0.3s ease;
-position: fixed;
-z-index: 30;
-}
-aside.open { transform: translateX(0); }
-.lg\\:ml-64 { margin-left: 0 !important; }
-}
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
 
-.sidebar-overlay {
-display: none;
-position: fixed;
-inset: 0;
-background: rgba(0,0,0,0.5);
-z-index: 25;
-}
-.sidebar-overlay.active { display: block; }
+    @keyframes slideDown {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
 
-td, th {
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-max-width: 200px;
-}
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
 
-th:nth-child(1), td:nth-child(1) { min-width: 200px; }
-th:nth-child(2), td:nth-child(2) { min-width: 150px; }
-th:nth-child(3), td:nth-child(3) { min-width: 140px; }
-th:nth-child(4), td:nth-child(4) { min-width: 200px; }
-th:nth-child(5), td:nth-child(5) { min-width: 150px; }
-th:nth-child(6), td:nth-child(6) { min-width: 90px; }
+    .notification-badge {
+      animation: pulse 2s infinite;
+    }
 
-/* Status dropdown styling */
-.status-select {
-border: none;
-background: transparent;
-font-size: 0.75rem;
-font-weight: 500;
-padding: 0.25rem 0.5rem;
-border-radius: 9999px;
-cursor: pointer;
-outline: none;
-}
+    /* Enhanced notification dropdown */
+    .notification-dropdown {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
 
-.status-select:focus {
-box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-}
+    .notification-dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .notification-item {
+      transition: all 0.2s ease;
+    }
+
+    .notification-item:hover {
+      background-color: #f3f4f6;
+    }
+
+    .notification-item.unread {
+      background-color: #eff6ff;
+    }
+
+    /* Responsive Sidebar */
+    @media (max-width: 1024px) {
+      aside {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        position: fixed;
+        z-index: 30;
+      }
+      aside.open { transform: translateX(0); }
+      .lg\\:ml-64 { margin-left: 0 !important; }
+    }
+
+    td, th {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+
+    th:nth-child(1), td:nth-child(1) { min-width: 200px; }
+    th:nth-child(2), td:nth-child(2) { min-width: 150px; }
+    th:nth-child(3), td:nth-child(3) { min-width: 140px; }
+    th:nth-child(4), td:nth-child(4) { min-width: 200px; }
+    th:nth-child(5), td:nth-child(5) { min-width: 150px; }
+    th:nth-child(6), td:nth-child(6) { min-width: 90px; }
+
+    /* Status dropdown styling */
+    .status-select {
+      border: none;
+      background: transparent;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .status-select:focus {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .toast-notification {
+      animation: slideIn 0.3s ease-out;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50">
@@ -200,43 +242,42 @@ box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         <h1 class="text-xl font-bold">SecureTech AV</h1>
       </div>
       <nav class="flex flex-col gap-1">
-  <a href="/leads/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/leads/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-users w-5 text-center"></i> Leads
-  </a>
+        <a href="/leads/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/leads/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-users w-5 text-center"></i> Leads
+        </a>
 
-  <a href="/dashboard/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/dashboard/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
-  </a>
+        <a href="/dashboard/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/dashboard/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+        </a>
 
-  <a href="/ongoing_projects/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/ongoing_projects/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-diagram-project w-5 text-center"></i> Ongoing Projects
-  </a>
+        <a href="/ongoing_projects/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/ongoing_projects/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-diagram-project w-5 text-center"></i> Ongoing Projects
+        </a>
 
-  <a href="/tasks/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/tasks/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-list-check w-5 text-center"></i> Tasks
-  </a>
+        <a href="/tasks/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/tasks/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-list-check w-5 text-center"></i> Tasks
+        </a>
 
-  <a href="/inventory/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/inventory/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Inventory
-  </a>
+        <a href="/inventory/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/inventory/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Inventory
+        </a>
 
-  <a href="/accesscontrol/" 
-     class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
-            {% if '/accesscontrol/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
-    <i class="fa-solid fa-shield-halved w-5 text-center"></i> Access Control
-  </a>
-</nav>
-
+        <a href="/accesscontrol/" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/accesscontrol/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-shield-halved w-5 text-center"></i> Access Control
+        </a>
+      </nav>
     </div>
     {% if request.user.is_superuser or is_admin%}
     <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center gap-2">
@@ -254,41 +295,61 @@ box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         <i class="fa-solid fa-bars"></i>
       </button>
       <div class="flex items-center gap-4 flex-1 justify-end flex-wrap">
-        <div class="relative flex-1 max-w-md">
-          <input type="text" placeholder="Search all..." 
-            class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-        </div>
-<!-- Notification Dropdown -->
-<div class="relative group">
-  <button class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative">
-    <i class="fa-solid fa-bell text-gray-600"></i>
-    {% if unread_count > 0 %}
-      <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-    {% endif %}
-  </button>
+        <!-- Search removed as per requirement -->
+        
+        <!-- Notification Dropdown -->
+        <div class="relative">
+          <button id="notificationBtn" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center relative hover:bg-gray-200 transition-colors">
+            <i class="fa-solid fa-bell text-gray-600"></i>
+            {% if unread_count > 0 %}
+              <span class="notification-badge absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {{ unread_count }}
+              </span>
+            {% endif %}
+          </button>
 
-  <!-- Dropdown Content -->
-  <div class="hidden group-hover:block absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-100 z-50">
-    <div class="p-3 border-b flex justify-between items-center">
-      <h3 class="font-semibold text-sm text-gray-700">Notifications</h3>
-      <a href="{% url 'notifications' %}" class="text-xs text-blue-600 hover:underline">View all</a>
-    </div>
-    <a href="{% url 'mark_notifications_read' %}" class="text-xs text-gray-500 hover:text-blue-600">Mark all read</a>
-    <div class="max-h-80 overflow-y-auto">
-      {% if notifications %}
-        {% for notif in notifications %}
-          <div class="px-4 py-3 text-sm border-b hover:bg-gray-50 {% if not notif.is_read %}bg-blue-50{% endif %}">
-            <p class="text-gray-800">{{ notif.message }}</p>
-            <p class="text-xs text-gray-500 mt-1">{{ notif.created_at|date:"M d, H:i" }}</p>
+          <!-- Dropdown Content -->
+          <div id="notificationDropdown" class="notification-dropdown absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-gray-100 z-50">
+            <div class="p-4 border-b flex justify-between items-center">
+              <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-bell text-blue-500"></i>
+                Notifications
+              </h3>
+              <div class="flex items-center gap-2">
+                <a href="{% url 'notifications' %}" class="text-xs text-blue-600 hover:underline">View all</a>
+                <button id="markAllReadBtn" class="text-xs text-gray-500 hover:text-blue-600 transition-colors">Mark all read</button>
+              </div>
+            </div>
+            <div id="notificationList" class="max-h-96 overflow-y-auto">
+              {% if notifications %}
+                {% for notif in notifications %}
+                  <div class="notification-item px-4 py-3 text-sm border-b {% if not notif.is_read %}unread{% endif %}" data-notif-id="{{ notif.id }}">
+                    <div class="flex items-start gap-3">
+                      <div class="mt-1">
+                        <i class="fa-solid fa-circle-info text-blue-500"></i>
+                      </div>
+                      <div class="flex-1">
+                        <p class="text-gray-800 leading-relaxed">{{ notif.message }}</p>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <i class="fa-regular fa-clock"></i>
+                          {{ notif.created_at|date:"M d, H:i" }}
+                        </p>
+                      </div>
+                      {% if not notif.is_read %}
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="p-8 text-center text-gray-500">
+                  <i class="fa-solid fa-inbox text-5xl mb-3 text-gray-300"></i>
+                  <p class="text-sm">No notifications yet</p>
+                </div>
+              {% endif %}
+            </div>
           </div>
-        {% endfor %}
-      {% else %}
-        <div class="p-4 text-sm text-gray-500 text-center">No notifications</div>
-      {% endif %}
-    </div>
-  </div>
-</div>
+        </div>
 
         <div class="relative group flex items-center gap-2 cursor-pointer">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
@@ -317,7 +378,8 @@ box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 {% endblock %}
 
 <!-- Notifications Dropdown Script -->
- <script>
+<script>
+// WebSocket connection
 const wsUrl = `ws://${window.location.host}/ws/notifications/`;
 const socket = new WebSocket(wsUrl);
 
@@ -327,14 +389,16 @@ socket.onclose = () => console.log("❌ WebSocket disconnected");
 socket.onmessage = function(e) {
   const data = JSON.parse(e.data);
   if (data.message) {
-    showToast(data.message);
+    showToastNotification(data.message);
     addNotificationToDropdown(data.message);
 
-    // 🧠 If admin, refresh automatically after short delay
+    // Update badge count
+    updateNotificationBadge();
+
+    // Refresh for non-admin or when modal is closed
     const isAdmin = "{{ request.user.is_superuser|yesno:'true,false' }}" === "true" || "{{ is_admin }}" === "True";
-    const isModalOpen = !document.getElementById("newTaskModal").classList.contains("hidden");
+    const isModalOpen = !document.getElementById("newTaskModal") || !document.getElementById("newTaskModal").classList.contains("hidden");
     if (!isModalOpen || !isAdmin) {
-      // Only refresh for task updates, not all notifications
       setTimeout(() => {
         window.location.reload();
       }, 1200);
@@ -342,82 +406,149 @@ socket.onmessage = function(e) {
   }
 };
 
-// --- 1️⃣ Auto popup toast for new notifications ---
-function showToast(message) {
+// Enhanced toast notification
+function showToastNotification(message) {
   const toast = document.createElement("div");
   toast.className = `
-    fixed bottom-5 right-5 bg-blue-600 text-white text-sm font-medium
-    px-4 py-3 rounded-lg shadow-lg animate-slide-in z-50
+    toast-notification fixed bottom-5 right-5 bg-gradient-to-r from-blue-500 to-blue-600 
+    text-white text-sm font-medium px-5 py-3 rounded-lg shadow-2xl z-50 max-w-md
   `;
-  toast.innerHTML = `<i class="fa-solid fa-bell mr-2"></i>${message}`;
+  toast.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fa-solid fa-bell text-xl"></i>
+      <span>${message}</span>
+    </div>
+  `;
   document.body.appendChild(toast);
 
-  // Auto disappear after 5s
+  // Auto remove after 5 seconds
   setTimeout(() => {
     toast.style.opacity = "0";
-    toast.style.transform = "translateY(20px)";
-    setTimeout(() => toast.remove(), 500);
+    toast.style.transform = "translateX(100px)";
+    setTimeout(() => toast.remove(), 300);
   }, 5000);
 }
 
-// --- 2️⃣ Add notification to dropdown dynamically ---
+// Add notification to dropdown
 function addNotificationToDropdown(message) {
-  const dropdown = document.querySelector(".max-h-80");
-  if (!dropdown) return;
+  const notificationList = document.getElementById("notificationList");
+  if (!notificationList) return;
+
+  // Remove "no notifications" message if exists
+  const emptyState = notificationList.querySelector('.text-center');
+  if (emptyState) emptyState.remove();
 
   const notif = document.createElement("div");
-  notif.className = "notif px-4 py-3 text-sm border-b bg-blue-50 hover:bg-gray-50 cursor-pointer";
+  notif.className = "notification-item px-4 py-3 text-sm border-b unread";
   notif.innerHTML = `
-    <p class="text-gray-800">${message}</p>
-    <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleString()}</p>
+    <div class="flex items-start gap-3">
+      <div class="mt-1">
+        <i class="fa-solid fa-circle-info text-blue-500"></i>
+      </div>
+      <div class="flex-1">
+        <p class="text-gray-800 leading-relaxed">${message}</p>
+        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+          <i class="fa-regular fa-clock"></i>
+          ${new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+      <span class="w-2 h-2 bg-blue-500 rounded-full mt-2"></span>
+    </div>
   `;
-  dropdown.prepend(notif);
+  notificationList.insertBefore(notif, notificationList.firstChild);
 
-  // Add red dot
-  const bell = document.querySelector(".fa-bell").parentElement;
-  if (bell && !bell.querySelector(".bg-red-500")) {
-    const dot = document.createElement("span");
-    dot.className = "absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full";
-    bell.appendChild(dot);
-  }
-
-  // Auto disappear after 10s for short-lived task notifications
-  setTimeout(() => {
-    notif.classList.add("fade-out");
-    setTimeout(() => notif.remove(), 800);
-  }, 10000);
+  // Update badge
+  updateNotificationBadge();
 }
 
-// --- 3️⃣ Auto mark as read on hover/click ---
-document.addEventListener("mouseover", function(e) {
-  const dropdown = e.target.closest(".max-h-80");
-  if (!dropdown) return;
+// Update notification badge count
+function updateNotificationBadge() {
+  const badge = document.querySelector('.notification-badge');
+  const unreadItems = document.querySelectorAll('.notification-item.unread').length;
+  
+  if (unreadItems > 0) {
+    if (!badge) {
+      const btn = document.getElementById('notificationBtn');
+      const newBadge = document.createElement('span');
+      newBadge.className = 'notification-badge absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center';
+      newBadge.textContent = unreadItems;
+      btn.appendChild(newBadge);
+    } else {
+      badge.textContent = unreadItems;
+    }
+  } else if (badge) {
+    badge.remove();
+  }
+}
 
-  // Mark all as read when hovered
-  dropdown.querySelectorAll(".notif.bg-blue-50").forEach(el => {
-    el.classList.remove("bg-blue-50");
-  });
+// Toggle notification dropdown
+const notificationBtn = document.getElementById('notificationBtn');
+const notificationDropdown = document.getElementById('notificationDropdown');
 
-  // Remove red dot from bell
-  const bellDot = document.querySelector(".fa-bell").parentElement.querySelector(".bg-red-500");
-  if (bellDot) bellDot.remove();
+notificationBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  notificationDropdown.classList.toggle('show');
+  
+  // Mark notifications as read when dropdown opens
+  if (notificationDropdown.classList.contains('show')) {
+    setTimeout(() => {
+      document.querySelectorAll('.notification-item.unread').forEach(item => {
+        item.classList.remove('unread');
+        const dot = item.querySelector('.bg-blue-500.rounded-full');
+        if (dot) dot.remove();
+      });
+      updateNotificationBadge();
+    }, 500);
+  }
 });
 
-// --- Optional CSS animation for slide & fade ---
-const style = document.createElement("style");
-style.innerHTML = `
-@keyframes slide-in {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.animate-slide-in { animation: slide-in 0.3s ease-out; }
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!notificationDropdown.contains(e.target) && e.target !== notificationBtn) {
+    notificationDropdown.classList.remove('show');
+  }
+});
 
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.5s ease;
+// Mark all as read
+const markAllReadBtn = document.getElementById('markAllReadBtn');
+if (markAllReadBtn) {
+  markAllReadBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch('{% url "mark_notifications_read" %}', {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        document.querySelectorAll('.notification-item.unread').forEach(item => {
+          item.classList.remove('unread');
+          const dot = item.querySelector('.bg-blue-500.rounded-full');
+          if (dot) dot.remove();
+        });
+        updateNotificationBadge();
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+  });
 }
-`;
-document.head.appendChild(style);
+
+// Helper: Get CSRF Token
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
 </script>
 
 <script>
@@ -425,26 +556,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabButtons = document.querySelectorAll(".tab-btn");
   const tabContents = document.querySelectorAll(".tab-content");
 
-  if (!tabButtons.length) return; // safety check
+  if (!tabButtons.length) return;
 
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.tab;
 
-      // Remove active styles
       tabButtons.forEach(b => b.classList.remove("border-blue-500", "text-blue-600"));
       tabContents.forEach(tc => tc.classList.add("hidden"));
 
-      // Add to current
       btn.classList.add("border-blue-500", "text-blue-600");
       document.getElementById(target).classList.remove("hidden");
     });
   });
 
-  // Default tab
   tabButtons[0].click();
 });
 </script>
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".mark-complete").forEach(checkbox => {
@@ -466,9 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await response.json();
 
         if (data.status === "success") {
-          showToast(isCompleted ? "✅ Task marked as completed!" : "↩️ Task marked as incomplete!");
-
-          // Smooth short delay, then refresh the page
+          showToastNotification(isCompleted ? "✅ Task marked as completed!" : "↩️ Task marked as incomplete!");
           setTimeout(() => window.location.reload(), 800);
         }
       } catch (err) {
@@ -476,23 +603,26 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-
-  // --- Helper: Get CSRF Token ---
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== "") {
-      const cookies = document.cookie.split(";");
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.substring(0, name.length + 1) === name + "=") {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
 });
+
+// Menu toggle for mobile
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+if (menuToggle) {
+  menuToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    sidebarOverlay.classList.toggle('active');
+  });
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('active');
+  });
+}
 </script>
 
 {% block extra_scripts %}

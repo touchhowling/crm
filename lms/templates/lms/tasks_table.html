@@ -1,69 +1,126 @@
-<table class="w-full text-left border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-white">
-  <thead class="bg-gray-100 text-gray-700 text-sm uppercase">
-    <tr>
-      <th class="p-3 w-12 text-center">✔</th>
-      <th class="p-3">Title</th>
-      <th class="p-3">Description</th>
-      <th class="p-3">Project</th>
-      <th class="p-3">Assignee</th>
-      <th class="p-3">Due Date</th>
-      <th class="p-3">Priority</th>
-      {% if request.user.is_superuser or is_admin %}
-      <th class="p-3 text-center">Actions</th>
-      {% endif %}
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for task in task_list %}
-    <tr class="border-b text-sm hover:bg-gray-50 transition">
-      <!-- ✅ Mark Complete Checkbox -->
-      <td class="text-center">
-        <input type="checkbox"
-            class="custom-checkbox mark-complete"
+<div class="bg-white rounded-lg shadow overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Task
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Project
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Assigned To
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Priority
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Due Date
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Status
+          </th>
+          <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for task in task_list %}
+        <tr class="view-task-row hover:bg-blue-50 cursor-pointer transition-colors"
             data-task-id="{{ task.id }}"
-            {% if task.completed %}checked{% endif %}>
-
-      </td>
-
-      <td class="p-3 font-medium text-gray-900">{{ task.title }}</td>
-      <td class="p-3 text-gray-600">{{ task.description|truncatewords:12 }}</td>
-      <td class="p-3">{{ task.project.project_name }}</td>
-      <td class="p-3">{{ task.user.username }}</td>
-      <td class="p-3">{{ task.due_date|date:"M d, Y H:i" }}</td>
-
-        <td class="p-3">
-        {% if task.priority == "High" %}
-            <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700 font-semibold">{{ task.priority }}</span>
-        {% elif task.priority == "Medium" %}
-            <span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 font-semibold">{{ task.priority }}</span>
-        {% else %}
-            <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700 font-semibold">{{ task.priority }}</span>
-        {% endif %}
-        </td>
-
-      {% if request.user.is_superuser or is_admin %}
-      <!-- ✏️ Edit / 🗑 Delete -->
-      <td class="p-3 text-center space-x-3">
-        <a href="#" 
-        data-task-id="{{ task.id }}" 
-        class="text-blue-500 hover:text-blue-700 edit-task"
-        title="Edit Task">
-        <i class="fa-solid fa-pen-to-square"></i>
-        </a>
-        <a href="{% url 'delete_task' task.id %}" 
-           class="text-red-500 hover:text-red-700"
-           onclick="return confirm('Are you sure you want to delete this task?')"
-           title="Delete Task">
-          <i class="fa-solid fa-trash"></i>
-        </a>
-      </td>
-      {% endif %}
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="8" class="text-center text-gray-500 py-4">No tasks found.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+            data-task-title="{{ task.title }}"
+            data-task-description="{{ task.description }}"
+            data-task-priority="{{ task.priority }}"
+            data-task-project="{{ task.project.project_name }}"
+            data-task-assignee="{{ task.user.username }}"
+            data-task-due-date="{{ task.due_date|date:'Y-m-d\TH:i' }}"
+            data-task-completed="{{ task.completed }}">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <input type="checkbox" 
+                     class="mark-complete custom-checkbox" 
+                     data-task-id="{{ task.id }}"
+                     {% if task.completed %}checked{% endif %}
+                     onclick="event.stopPropagation()">
+              <div>
+                <div class="text-sm font-medium text-gray-900">{{ task.title }}</div>
+                {% if task.description %}
+                <div class="text-xs text-gray-500 truncate max-w-xs">{{ task.description|truncatewords:10 }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">{{ task.project.project_name|truncatewords:5 }}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                {{ task.user.first_name|slice:":1"|upper|default:"U" }}
+              </div>
+              <span class="text-sm text-gray-900">{{ task.user.username }}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+              {% if task.priority == 'High' %}
+                bg-red-100 text-red-800
+              {% elif task.priority == 'Medium' %}
+                bg-yellow-100 text-yellow-800
+              {% else %}
+                bg-green-100 text-green-800
+              {% endif %}">
+              {{ task.priority }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">
+              <i class="fa-solid fa-calendar text-gray-400 mr-1"></i>
+              {{ task.due_date|date:"M d, Y" }}
+            </div>
+            <div class="text-xs text-gray-500">{{ task.due_date|date:"h:i A" }}</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {% if task.completed %}
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                <i class="fa-solid fa-circle-check mr-1"></i> Completed
+              </span>
+            {% else %}
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                <i class="fa-solid fa-clock mr-1"></i> In Progress
+              </span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-end gap-2">
+              {% if is_admin %}
+              <a href="#" class="edit-task text-blue-600 hover:text-blue-900" data-task-id="{{ task.id }}" title="Edit Task">
+                <i class="fa-solid fa-edit"></i>
+              </a>
+              <a href="{% url 'delete_task' task.id %}" 
+                 class="delete-task text-red-600 hover:text-red-900" 
+                 onclick="return confirm('Are you sure you want to delete this task?')" 
+                 title="Delete Task">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+              {% endif %}
+              <button class="text-gray-600 hover:text-gray-900" title="View Details" onclick="event.stopPropagation(); this.closest('tr').click()">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+            <i class="fa-solid fa-inbox text-4xl mb-2 text-gray-300"></i>
+            <p class="text-lg">No tasks found</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

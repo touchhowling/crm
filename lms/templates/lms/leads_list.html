@@ -82,8 +82,8 @@
                       </select>
                     </td>
                     <td class="px-6 py-4 text-center">
-                      <a href="#" class="text-teal-600 hover:text-teal-800">
-                        View
+                      <a href="{% url 'lead_detail' lead.id %}" class="text-teal-600 hover:text-teal-800 font-medium">
+                        View Details
                       </a>
                     </td>
                   </tr>
@@ -324,7 +324,7 @@
     });
 
     function applyFilters() {
-      const q = searchInput.value.toLowerCase();
+      const q = searchInput ? searchInput.value.toLowerCase() : '';
       const city = filterCity.value;
       const status = filterStatus.value;
 
@@ -345,7 +345,7 @@
         Array.from(rows).filter(r => r.style.display !== 'none').length;
     }
 
-    searchInput?.addEventListener('input', applyFilters);
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
     filterCity?.addEventListener('change', applyFilters);
     filterStatus?.addEventListener('change', applyFilters);
 
