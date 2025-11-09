@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Access Control - SecureTech AV CRM{% endblock %}
+
+{% block main %}
+<main class="p-6">
+  <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="/dashboard/" class="hover:text-teal-600 cursor-pointer">Home</a> /
+    <span class="text-gray-900">Access Control</span>
+  </div>
+
+  <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">
+    <i class="fa-solid fa-shield-halved text-blue-600"></i> Access Control
+  </h1>
+
+  <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm text-left">
+      <thead class="bg-gray-50 text-gray-700 uppercase text-xs">
+        <tr>
+          <th class="px-6 py-3">User</th>
+          <th class="px-6 py-3">Email</th>
+          {% for group in groups %}
+            <th class="px-4 py-3 text-center">{{ group.name|title }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for user in users %}
+          <tr>
+            <td class="px-6 py-3 font-medium">{{ user.get_full_name|default:user.username }}</td>
+            <td class="px-6 py-3 text-gray-600">{{ user.email|default:"—" }}</td>
+            {% for group in groups %}
+              <td class="px-4 py-2 text-center">
+                <input 
+                  type="checkbox" 
+                  data-user="{{ user.id }}" 
+                  data-group="{{ group.name }}" 
+                  {% if group in user.groups.all %}checked{% endif %}
+                  class="group-toggle w-4 h-4 accent-blue-600 cursor-pointer"
+                >
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="text-xs text-gray-400 mt-4">Changes are saved automatically when toggled.</p>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelectorAll('.group-toggle').forEach(chk => {
+  chk.addEventListener('change', e => {
+    const userId = e.target.dataset.user;
+    const groupName = e.target.dataset.group;
+    const action = e.target.checked ? 'add' : 'remove';
+
+    fetch("{% url 'update_user_groups' %}", {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `user_id=${userId}&group_name=${groupName}&action=${action}`
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) alert(data.message);
+    })
+    .catch(() => alert('Error updating permission.'));
+  });
+});
+
+// Reuse your getCookie function
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+{% endblock %}

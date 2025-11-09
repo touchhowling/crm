@@ -21,8 +21,43 @@ from .models import LeadSource
 import json
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.contrib.auth.decorators import user_passes_test
+
+def has_group(user, group_name):
+    """Check if a user belongs to a specific group."""
+    return user.is_authenticated and user.groups.filter(name=group_name).exists()
+
+@login_required
+@user_passes_test(lambda u: has_group(u, 'admin') or u.is_superuser)
+def access_control(request):
+    """Admin page to view and assign groups to users."""
+    users = User.objects.exclude(is_superuser=True).select_related()
+    groups = Group.objects.all().order_by('name')
+    return render(request, 'lms/access_control.html', {'users': users, 'groups': groups})
 
 
+@login_required
+@user_passes_test(lambda u: has_group(u, 'admin') or u.is_superuser)
+def update_user_groups(request):
+    """Handle AJAX updates for assigning/removing groups."""
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        group_name = request.POST.get('group_name')
+        action = request.POST.get('action')
+
+        try:
+            user = User.objects.get(id=user_id)
+            group = Group.objects.get(name=group_name)
+
+            if action == 'add':
+                user.groups.add(group)
+            elif action == 'remove':
+                user.groups.remove(group)
+
+            return JsonResponse({'success': True, 'message': 'Updated successfully.'})
+        except (User.DoesNotExist, Group.DoesNotExist):
+            return JsonResponse({'success': False, 'message': 'User or group not found.'})
+    return JsonResponse({'success': False, 'message': 'Invalid request.'})
 
 @csrf_exempt
 def add_inline_lead(request):
@@ -109,6 +144,7 @@ def logout_view(request):
 # ============================================================================
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'leads_access') or has_group(u, 'admin'))
 def leads_list(request):
     """Display list of all leads with search and filter capabilities"""
 
@@ -461,6 +497,8 @@ def create_boq(request, lead_id):
         return redirect('lead_detail', lead_id=lead_id)
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'project_permission_edit') or has_group(u, 'admin'))
+
 def edit_project(request, project_id):
     """Edit an existing project"""
     try:
@@ -1081,7 +1119,7 @@ from django.db import models
 from django.conf import settings
 
 @login_required
-@login_required
+@user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
 def dashboard(request):
     """Dynamic and filterable dashboard — with LeadSource filters and pie chart"""
     user = request.user
@@ -1213,6 +1251,7 @@ def dashboard(request):
 # ============================================================================
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'ongoing_projects_access') or has_group(u, 'admin'))
 def ongoing_projects(request):
     projects = Project.objects.exclude(status='open').select_related('lead_source').order_by('-id')
     return render(request, 'lms/ongoing_projects.html', {'projects': projects})
@@ -1260,6 +1299,7 @@ def project_detail(request, project_id):
 
 @login_required
 @require_POST
+@user_passes_test(lambda u: has_group(u, 'project_permission_edit') or has_group(u, 'admin'))
 def add_project(request):
     """Add a new project"""
     try:
@@ -1302,6 +1342,7 @@ def add_project(request):
 # ============================================================================
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
 def tasks(request):
     user = request.user
     print(user)
@@ -1340,6 +1381,7 @@ def tasks(request):
 
 @login_required
 @require_POST
+@user_passes_test(lambda u: has_group(u, 'task_permission_edit') or has_group(u, 'admin'))
 def add_task(request):
     print(request)
     """Add a new task"""
@@ -1399,6 +1441,7 @@ def edit_task(request, task_id):
     return render(request, 'lms/edit_task.html', {'task': task})
 
 @user_passes_test(is_admin_or_superuser)
+@user_passes_test(lambda u: has_group(u, 'task_permission_edit') or has_group(u, 'admin'))
 def delete_task(request, task_id):
     print('check')
     task = get_object_or_404(Task, id=task_id)
@@ -1452,6 +1495,7 @@ def toggle_task(request, task_id):
 # ============================================================================
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'inventory_access_view') or has_group(u, 'admin'))
 def inventory(request):
     """Display inventory items"""
     items = InventoryItem.objects.all().order_by('item_name')
@@ -1471,6 +1515,7 @@ def inventory(request):
 
 @login_required
 @require_POST
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
 def add_inventory_item(request):
     """Add a new inventory item"""
     try:
@@ -1502,6 +1547,7 @@ def add_inventory_item(request):
 
 @login_required
 @require_POST
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
 def add_inventory_item(request):
     """Add a new inventory item"""
     try:
@@ -1541,6 +1587,7 @@ def add_inventory_item(request):
 
 @login_required
 @require_POST
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
 def update_inventory_item(request, item_id):
     """Update inventory item details"""
     try:
@@ -1592,6 +1639,7 @@ def update_inventory_item(request, item_id):
 
 
 @login_required
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
 def inventory(request):
     """Display inventory items with enhanced tracking"""
     items = InventoryItem.objects.all().order_by('item_name')

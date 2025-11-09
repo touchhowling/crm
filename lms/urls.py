@@ -20,7 +20,8 @@ urlpatterns = [
     path('projects/<int:project_id>/delete/', views.delete_project, name='delete_project'),
     path('leads/add-inline/', views.add_inline_lead, name='add_inline_lead'),
     path('projects/<int:project_id>/boq/', views.project_boq_detail, name='project_boq_detail'),
-    
+    path('access-control/', views.access_control, name='access_control'),
+    path('access-control/update/', views.update_user_groups, name='update_user_groups'),
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
     

@@ -92,7 +92,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # AUTH REDIRECTS
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = '/leads/'
+LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'
 ASGI_APPLICATION = 'crm.asgi.application'
 
