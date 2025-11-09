@@ -16,6 +16,62 @@ from django.utils import timezone
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth.models import Group
+from django.http import JsonResponse
+from .models import LeadSource
+import json
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+
+
+
+@csrf_exempt
+def add_inline_lead(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        country_code = data.get('country_code', '+91')
+        phone_number = data.get('phone_number')
+        city = data.get('city')
+        address = data.get('address')
+
+        if not first_name or not phone_number:
+            return JsonResponse({'success': False, 'message': 'First name and phone number are required!'})
+
+        # Create lead
+        lead = LeadSource.objects.create(
+            first_name=first_name,
+            last_name=last_name,
+            country_code=country_code,
+            phone_number=phone_number,
+            city=city,
+            address=address,
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Lead created successfully',
+            'id': lead.id,
+            'first_name': lead.first_name,
+            'last_name': lead.last_name,
+        })
+
+def search_leads(request):
+    query = request.GET.get('q', '')
+    if len(query) < 2:
+        return JsonResponse([], safe=False)
+    
+    leads = LeadSource.objects.filter(
+        first_name__icontains=query
+    ) | LeadSource.objects.filter(
+        last_name__icontains=query
+    ) | LeadSource.objects.filter(
+        phone_number__icontains=query
+    )
+
+    data = list(leads.values('id', 'first_name', 'last_name', 'city'))
+    return JsonResponse(data, safe=False)
+
 
 # ============================================================================
 # AUTHENTICATION VIEWS
@@ -55,10 +111,13 @@ def logout_view(request):
 @login_required
 def leads_list(request):
     """Display list of all leads with search and filter capabilities"""
+
     if request.user.is_superuser or request.user.groups.filter(name="admin").exists():
         leads = LeadSource.objects.all().order_by('-snapshot_d')
+        projects = Project.objects.select_related('lead_source').all()
     else:
         leads = LeadSource.objects.filter(user=request.user).order_by('-snapshot_d')
+        projects = Project.objects.filter(user=request.user).order_by('-snapshot_d')
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -85,6 +144,7 @@ def leads_list(request):
         'search_query': search_query,
         'city_filter': city_filter,
         'status_filter': status_filter,
+        'projects': projects
     }
     
     return render(request, 'lms/leads_list.html', context)
@@ -400,7 +460,84 @@ def create_boq(request, lead_id):
         messages.error(request, f'Error creating BOQ: {str(e)}')
         return redirect('lead_detail', lead_id=lead_id)
 
+@login_required
+def edit_project(request, project_id):
+    """Edit an existing project"""
+    try:
+        project = get_object_or_404(Project, id=project_id)
 
+        # Access control: only the assigned user, admin, or superuser can edit
+        if not (request.user.is_superuser or request.user.groups.filter(name="admin").exists()):
+            if project.user != request.user:
+                messages.error(request, 'You do not have permission to edit this project!')
+                referer = request.META.get('HTTP_REFERER')
+                return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+
+        if request.method == 'POST':
+            project_name = request.POST.get('project_name', '').strip()
+            amount = request.POST.get('amount', '').strip()
+            expected_closure = request.POST.get('expected_closure', '').strip()
+            status = request.POST.get('status', 'open')
+            remarks = request.POST.get('remarks', '').strip()
+            lead_source_id = request.POST.get('lead_source_id', '').strip()
+
+            # Validation
+            if not project_name or not lead_source_id:
+                messages.error(request, 'Project name and lead source are required!')
+                return redirect('edit_project', project_id=project_id)
+
+            lead_source = get_object_or_404(LeadSource, id=lead_source_id)
+
+            # Update project details
+            project.project_name = project_name
+            project.amount = amount if amount else None
+            project.expected_closure = expected_closure if expected_closure else None
+            project.status = status
+            project.lead_source = lead_source
+            project.remarks = remarks
+            project.save()
+
+            messages.success(request, f'Project "{project_name}" updated successfully!')
+            referer = request.META.get('HTTP_REFERER')
+            return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+
+        # For GET request → prefill the form
+        lead_sources = LeadSource.objects.all().order_by('first_name')
+        context = {
+            'project': project,
+            'lead_sources': lead_sources
+        }
+        return render(request, 'lms/edit_project.html', context)
+
+    except Exception as e:
+        messages.error(request, f'Error editing project: {str(e)}')
+        referer = request.META.get('HTTP_REFERER')
+        return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+
+@login_required
+def delete_project(request, project_id):
+    """Delete a project"""
+    try:
+        project = get_object_or_404(Project, id=project_id)
+
+        # Access control
+        if not (request.user.is_superuser or request.user.groups.filter(name="admin").exists()):
+            if project.user != request.user:
+                messages.error(request, 'You do not have permission to delete this project!')
+                referer = request.META.get('HTTP_REFERER')
+                return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+        project_name = project.project_name
+        project.delete()
+
+        messages.success(request, f'Project "{project_name}" deleted successfully!')
+        referer = request.META.get('HTTP_REFERER')
+        return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+
+    except Exception as e:
+        messages.error(request, f'Error deleting project: {str(e)}')
+        referer = request.META.get('HTTP_REFERER')
+        return HttpResponseRedirect(referer or reverse('ongoing_projects'))
+    
 @login_required
 @require_POST
 def update_boq(request, boq_id):
@@ -944,100 +1081,132 @@ from django.db import models
 from django.conf import settings
 
 @login_required
+@login_required
 def dashboard(request):
-    """FULLY DYNAMIC DASHBOARD - NO HARDCODED DATA"""
-    
+    """Dynamic and filterable dashboard — with LeadSource filters and pie chart"""
     user = request.user
-    
-    # === 1. LEADS ===
-    leads = LeadSource.objects.all() if user.is_superuser else LeadSource.objects.filter(user=user)
-    total_leads = leads.count()
 
-    # Get actual status counts safely
+    # === FILTERS ===
+    lead_filter = request.GET.get('lead', '')
+    city_filter = request.GET.get('city', '')
+    status_filter = request.GET.get('status', '')
+
+    # === PROJECTS ===
+    projects = Project.objects.select_related('lead_source')
+
+    if not user.is_superuser and not user.groups.filter(name="admin").exists():
+        projects = projects.filter(user=user)
+
+    if lead_filter:
+        projects = projects.filter(lead_source__id=lead_filter)
+    if city_filter:
+        projects = projects.filter(lead_source__city__iexact=city_filter)
+    if status_filter:
+        projects = projects.filter(status=status_filter)
+
+    total_projects = projects.count()
+
+    # === STATUS COUNTS ===
     raw_status_counts = dict(
-        leads.values('status')
-             .annotate(count=Count('status'))
-             .values_list('status', 'count')
+        projects.values('status')
+                .annotate(count=Count('status'))
+                .values_list('status', 'count')
     )
 
-    # Map internal status → display name
     status_map = {
         'open': 'New',
         'contacted': 'Contacted',
         'boq': 'BOQ',
         'advanced': 'Advanced',
+        'In Progress': 'In Progress',
+        'Testing': 'Testing',
         'won': 'Won',
         'closed': 'Closed',
         'lost': 'Lost',
     }
 
-    # Build final status counts (default 0 if missing)
     status_counts = {
         status_map.get(key, key): raw_status_counts.get(key, 0)
         for key in status_map.keys()
     }
 
-    # === 2. PROJECTS & REVENUE ===
-    projects = Project.objects.select_related('lead_source').all() if user.is_superuser else Project.objects.select_related('lead_source').filter(user=user)
-    total_projects = projects.count()
+    # === LEAD SOURCE DISTRIBUTION ===
+    lead_source_counts = dict(
+        projects.values('lead_source__first_name', 'lead_source__last_name')
+                .annotate(count=Count('id'))
+                .order_by('-count')
+                .values_list('lead_source__first_name', 'count')
+    )
 
-    won_projects = projects.filter(lead_source__status='won')
+    # === CITY DISTRIBUTION ===
+    city_counts = dict(
+        projects.values('lead_source__city')
+                .annotate(count=Count('id'))
+                .order_by('-count')
+                .values_list('lead_source__city', 'count')
+    )
+
+    # === REVENUE & KPIs ===
+    won_projects = projects.filter(status='won')
     total_revenue = won_projects.aggregate(total=Sum('amount'))['total'] or 0
-    
-    # Calculate average deal size
+
     won_count = won_projects.count()
     avg_deal = (total_revenue / won_count) if won_count > 0 else 0
-    
-    # Calculate win rate
-    win_rate = round((won_count / total_leads * 100), 1) if total_leads > 0 else 0
-    
-    # Calculate conversion rate
-    conversion_rate = round((raw_status_counts.get('won', 0) / total_leads * 100), 1) if total_leads > 0 else 0
+    win_rate = round((won_count / total_projects * 100), 1) if total_projects > 0 else 0
+    conversion_rate = win_rate
 
-    # === 3. TOP LEADS (by project amount) ===
-    top_leads = Project.objects.select_related('lead_source') \
-        .filter(amount__isnull=False, amount__gt=0) \
-        .order_by('-amount')[:5]
+    # === TOP LEADS ===
+    top_leads = projects.filter(amount__gt=0).order_by('-amount')[:5]
 
-    # === 4. REVENUE TREND (Last 12 months) ===
+    # === REVENUE TREND ===
     today = timezone.now().date()
-    months = []
-    revenue_data = []
+    months, revenue_data = [], []
 
     for i in range(11, -1, -1):
         month_date = today - timedelta(days=30 * i)
         month_start = month_date.replace(day=1)
-        
-        # Calculate end of month
-        if month_start.month == 12:
-            next_month = month_start.replace(year=month_start.year + 1, month=1, day=1)
-        else:
-            next_month = month_start.replace(month=month_start.month + 1, day=1)
+        next_month = (month_start.replace(year=month_start.year + 1, month=1, day=1)
+                      if month_start.month == 12
+                      else month_start.replace(month=month_start.month + 1, day=1))
         month_end = next_month - timedelta(days=1)
 
-        # Get revenue for won projects in this month
-        month_revenue = Project.objects.filter(
-            lead_source__status='won',
+        month_revenue = projects.filter(
+            status='won',
             snapshot_d__date__gte=month_start,
             snapshot_d__date__lte=month_end
         ).aggregate(total=Sum('amount'))['total'] or 0
 
-        months.append(month_date.strftime('%b'))
+        months.append(month_start.strftime('%b'))
         revenue_data.append(float(month_revenue))
 
-    # === CONTEXT ===
+    # === FILTER OPTIONS ===
+    all_leads = LeadSource.objects.all()
+    all_cities = list(LeadSource.objects.exclude(city__isnull=True).values_list('city', flat=True).distinct())
+    all_statuses = list(Project.objects.values_list('status', flat=True).distinct())
+
     context = {
         'total_billing': int(total_revenue),
         'conversion_rate': conversion_rate,
         'avg_deal': int(avg_deal),
         'win_rate': win_rate,
-        'status_counts': status_counts,
+        'status_counts': json.dumps(status_counts),
+        'lead_source_counts': json.dumps(lead_source_counts),
+        'city_counts': json.dumps(city_counts),
         'top_leads': top_leads,
-        'revenue_labels': months,
-        'revenue_data': revenue_data,
+        'revenue_labels': json.dumps(months),
+        'revenue_data': json.dumps(revenue_data),
+        'all_leads': all_leads,
+        'all_cities': all_cities,
+        'all_statuses': all_statuses,
+        'lead_filter': lead_filter,
+        'city_filter': city_filter,
+        'status_filter': status_filter,
     }
+    print(lead_source_counts)
+
 
     return render(request, 'lms/dashboard.html', context)
+
 
 # ============================================================================
 # PROJECT VIEWS
@@ -1045,34 +1214,32 @@ def dashboard(request):
 
 @login_required
 def ongoing_projects(request):
-    """Display list of ongoing projects"""
-    q_objects = Q(lead_source__status__in=['advanced', 'won']) | Q(status__in=['In Progress', 'Testing', 'On Hold'])
-    if request.user.is_superuser:
-        projects = Project.objects.filter(q_objects).select_related('lead_source', 'user').distinct().order_by('-snapshot_d')
-    else:
-        projects = Project.objects.filter(user=request.user).filter(q_objects).select_related('lead_source', 'user').distinct().order_by('-snapshot_d')
-    
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        projects = projects.filter(
-            Q(project_name__icontains=search_query) |
-            Q(lead_source__first_name__icontains=search_query) |
-            Q(lead_source__last_name__icontains=search_query)
-        )
-    
-    # Filter by status
-    status_filter = request.GET.get('status', '')
-    if status_filter:
-        projects = projects.filter(status=status_filter)
-    
-    context = {
-        'projects': projects,
-        'search_query': search_query,
-        'status_filter': status_filter,
-    }
-    
-    return render(request, 'lms/ongoing_projects.html', context)
+    projects = Project.objects.exclude(status='open').select_related('lead_source').order_by('-id')
+    return render(request, 'lms/ongoing_projects.html', {'projects': projects})
+
+
+from .models import Project, BOQ
+
+def project_boq_detail(request, project_id):
+    # Get project
+    project = get_object_or_404(Project, id=project_id)
+
+    # Get the linked lead source
+    lead = project.lead_source
+
+    # Get all BOQs for this project
+    boqs = BOQ.objects.filter(project=project).order_by('-created_at')
+
+    # Get inventory items for the "Add Item" section
+    inventory_items = InventoryItem.objects.all()
+
+    # Reuse the existing lead_detail.html template
+    return render(request, 'lms/lead_detail.html', {
+        'lead': lead,
+        'boqs': boqs,
+        'inventory_items': inventory_items,
+        'project': project,  # optional context if needed
+    })
 
 
 @login_required
@@ -1106,7 +1273,7 @@ def add_project(request):
         # Validation
         if not project_name or not lead_source_id:
             messages.error(request, 'Project name and lead source are required!')
-            return redirect('ongoing_projects')
+            return redirect('leads')
         
         lead_source = get_object_or_404(LeadSource, id=lead_source_id)
         
@@ -1122,11 +1289,13 @@ def add_project(request):
         )
         
         messages.success(request, f'Project "{project_name}" created successfully!')
-        return redirect('ongoing_projects')
+        referer = request.META.get('HTTP_REFERER')
+        return HttpResponseRedirect(referer or reverse('ongoing_projects'))
         
     except Exception as e:
         messages.error(request, f'Error creating project: {str(e)}')
-        return redirect('ongoing_projects')
+        referer = request.META.get('HTTP_REFERER')
+        return HttpResponseRedirect(referer or reverse('ongoing_projects'))
 
 # ============================================================================
 # DASHBOARD (Chart.js)

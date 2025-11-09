@@ -22,7 +22,6 @@ class LeadSource(models.Model):
     remarks = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     snapshot_d = models.DateTimeField(auto_now_add=True)
     has_project = models.BooleanField(default=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)

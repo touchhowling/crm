@@ -33,11 +33,7 @@
         </select>
       </form>
       
-      {% if boq.status != 'approved' %}
-      <a href="/boq/{{ boq.id }}/edit/" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2">
-        <i class="fa-solid fa-edit"></i> Edit
-      </a>
-      {% endif %}
+
       
       <a href="{% url 'download_boq_pdf' boq.id %}" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2">
         <i class="fa-solid fa-download"></i> Download PDF

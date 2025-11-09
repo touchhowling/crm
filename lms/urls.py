@@ -16,6 +16,10 @@ urlpatterns = [
     path('boq/<int:boq_id>/update/', views.update_boq, name='update_boq'),
     path('boq/<int:boq_id>/delete/', views.delete_boq, name='delete_boq'),
     path('boq/<int:boq_id>/change-status/', views.change_boq_status, name='change_boq_status'),
+    path('leads/search/', views.search_leads, name='search_leads'),
+    path('projects/<int:project_id>/delete/', views.delete_project, name='delete_project'),
+    path('leads/add-inline/', views.add_inline_lead, name='add_inline_lead'),
+    path('projects/<int:project_id>/boq/', views.project_boq_detail, name='project_boq_detail'),
     
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -24,7 +28,8 @@ urlpatterns = [
     path('ongoing_projects/', views.ongoing_projects, name='ongoing_projects'),
     path('project/<int:project_id>/', views.project_detail, name='project_detail'),
     path('project/add/', views.add_project, name='add_project'),
-    
+    path('projects/<int:project_id>/edit/', views.edit_project, name='edit_project'),
+
     # Tasks
     path('tasks/', views.tasks, name='tasks'),
     path('tasks/add/', views.add_task, name='add_task'),
