@@ -13,3 +13,5 @@ crispy-bootstrap5
 django-widget-tweaks
 djangorestframework
 httpx
+daphne
+channels
