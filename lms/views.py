@@ -22,7 +22,11 @@ import json
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.contrib.auth.decorators import user_passes_test
-
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.shortcuts import redirect
+from .models import InventoryItem
 def has_group(user, group_name):
     """Check if a user belongs to a specific group."""
     return user.is_authenticated and user.groups.filter(name=group_name).exists()
@@ -81,6 +85,8 @@ def add_inline_lead(request):
             phone_number=phone_number,
             city=city,
             address=address,
+            user=request.user 
+
         )
 
         return JsonResponse({
@@ -90,7 +96,49 @@ def add_inline_lead(request):
             'first_name': lead.first_name,
             'last_name': lead.last_name,
         })
-
+@login_required
+@require_POST
+def update_project_status(request, project_id):
+    """Update project status via AJAX"""
+    try:
+        project = get_object_or_404(Project, id=project_id)
+        new_status = request.POST.get('status')
+        
+        # Access control
+        if not (request.user.is_superuser or request.user.groups.filter(name="admin").exists()):
+            if project.user != request.user:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You do not have permission to update this project!'
+                }, status=403)
+        
+        # Validate status
+        valid_statuses = ['open', 'contacted', 'boq', 'advanced', 'In Progress', 'won', 'closed', 'lost']
+        if new_status not in valid_statuses:
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid status value!'
+            }, status=400)
+        
+        old_status = project.status
+        project.status = new_status
+        project.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Status updated from {old_status} to {new_status} successfully!'
+        })
+        
+    except Project.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Project not found!'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
 def search_leads(request):
     query = request.GET.get('q', '')
     if len(query) < 2:
@@ -124,7 +172,7 @@ def login_view(request):
         if user is not None:
             login(request, user)
             messages.success(request, f'Welcome back, {user.get_full_name() or user.username}!')
-            return redirect('leads_list')
+            return redirect('dashboard')
         else:
             messages.error(request, 'Invalid username or password!')
             return render(request, 'registration/login.html')
@@ -290,17 +338,22 @@ def update_lead_status(request):
             'message': f'Error: {str(e)}'
         }, status=500)
 @login_required
-def lead_detail(request, lead_id):
-    """Display detailed information about a specific lead"""
-    lead = get_object_or_404(LeadSource, id=lead_id)
+def lead_detail(request, project_id):
+    """Display detailed information about a lead using project_id"""
+    project = get_object_or_404(Project, id=project_id)
+    lead = project.lead_source
+    
+    # All projects for this lead (optional, keeps your UI same)
     projects = Project.objects.filter(lead_source=lead).order_by('-snapshot_d')
     
     context = {
         'lead': lead,
+        'project': project,
         'projects': projects,
     }
     
     return render(request, 'lms/lead_detail.html', context)
+
 
 
 @login_required
@@ -339,162 +392,137 @@ except ImportError:
 
 
 @login_required
-def lead_detail(request, lead_id):
-    """Display detailed information about a specific lead with BOQ functionality"""
-    lead = get_object_or_404(LeadSource, id=lead_id)
+def lead_detail(request, project_id):
+    """Display detailed information about a specific project and its lead with BOQ functionality"""
     
-    # Check permissions
+    # Get project first
+    project = get_object_or_404(Project, id=project_id)
+    
+    # Get the lead linked to this project
+    lead = project.lead_source
+
+    # Permission check
     if not (request.user.is_superuser or request.user.groups.filter(name="admin").exists()):
         if lead.user != request.user:
-            messages.error(request, 'You do not have permission to view this lead.')
-            return redirect('leads_list')
-    
+            messages.error(request, 'You do not have permission to view this project.')
+            return redirect('ongoing_projects')
+
+    # All projects for same lead
     projects = Project.objects.filter(lead_source=lead).order_by('-snapshot_d')
-    boqs = BOQ.objects.filter(lead_source=lead).order_by('-created_at')
-    inventory_items = InventoryItem.objects.all().order_by('item_name')
     
-    context = {
+    # BOQs linked to the project (NOT to lead)
+    boqs = BOQ.objects.filter(project=project).order_by('-created_at')
+
+    # Inventory
+    inventory_items = InventoryItem.objects.all().order_by('item_name')
+
+    return render(request, 'lms/lead_detail.html', {
         'lead': lead,
+        'project': project,
         'projects': projects,
         'boqs': boqs,
         'inventory_items': inventory_items,
-    }
-    
-    return render(request, 'lms/lead_detail.html', context)
+    })
+
 
 
 @login_required
 @require_POST
-def create_boq(request, lead_id):
-    """Create a new BOQ for a lead - FIXED VERSION"""
+def create_boq(request, project_id):
+    """Create BOQ from project screen"""
     from decimal import Decimal
-    
-    try:
-        lead = get_object_or_404(LeadSource, id=lead_id)
-        
-        # Get form data
-        tax_rate = Decimal(request.POST.get('tax_rate', '18.00'))
-        overall_discount_percentage = Decimal(request.POST.get('overall_discount_percentage', '0'))
-        notes = request.POST.get('notes', '')
-        
-        # Create BOQ
-        boq = BOQ.objects.create(
-            lead_source=lead,
-            tax_rate=tax_rate,
-            overall_discount_percentage=overall_discount_percentage,
-            notes=notes,
-            created_by=request.user
-        )
-        
-        # Get item data (arrays)
-        sr_nos = request.POST.getlist('sr_no[]')
-        inventory_ids = request.POST.getlist('inventory_id[]')
-        quantities = request.POST.getlist('quantity[]')
-        discounts = request.POST.getlist('discount[]')
-        
-        # Validation
-        valid_items = [i for i, inv_id in enumerate(inventory_ids) if inv_id and inv_id.strip()]
-        
-        if not valid_items:
-            boq.delete()
-            messages.error(request, 'Please add at least one item to the BOQ!')
-            return redirect('lead_detail', lead_id=lead_id)
-        
-        # Create BOQ items
-        items_created = 0
-        for i in valid_items:
-            try:
-                inventory_item = get_object_or_404(InventoryItem, id=int(inventory_ids[i]))
-                quantity = int(quantities[i])
-                discount = Decimal(discounts[i]) if discounts[i] else Decimal('0')
-                
-                # Create the BOQ item
-                boq_item = BOQItem.objects.create(
-                    boq=boq,
-                    sr_no=int(sr_nos[i]),
-                    inventory_item=inventory_item,
-                    quantity=quantity,
-                    discount_percentage=discount
-                )
-                items_created += 1
-                
-                # Create order requirement if insufficient stock
-                if not boq_item.has_sufficient_stock:
-                    shortage = quantity - boq_item.available_quantity
-                    
-                    # Get or create project
-                    project = boq.project
-                    if not project:
-                        project_name = f"{lead.first_name} {lead.last_name} - {lead.city or 'Project'}"
-                        project = Project.objects.create(
-                            project_name=project_name,
-                            lead_source=lead,
-                            amount=Decimal('0'),  # Will be updated after BOQ calculation
-                            status='In Progress',
-                            user=request.user
-                        )
-                        boq.project = project
-                        boq.save()
-                    
-                    # Create order requirement
-                    InventoryOrderRequirement.objects.create(
-                        inventory_item=inventory_item,
-                        project=project,
-                        boq=boq,
-                        boq_item=boq_item,
-                        required_quantity=quantity,
-                        available_quantity=boq_item.available_quantity,
-                        shortage_quantity=shortage,
-                        status='pending'
-                    )
-                    
-            except Exception as e:
-                messages.warning(request, f'Error adding item {i+1}: {str(e)}')
-                continue
-        
-        if items_created == 0:
-            boq.delete()
-            messages.error(request, 'Failed to create any BOQ items!')
-            return redirect('lead_detail', lead_id=lead_id)
-        
-        # Calculate totals
-        boq.calculate_totals()
-        
-        # Reload BOQ to get updated values
-        boq.refresh_from_db()
-        
-        # Update lead status to BOQ if not already advanced or won
-        if lead.status not in ['advanced', 'won', 'closed']:
-            lead.status = 'boq'
-            lead.save()
-        
-        # Create or update project
-        if not lead.has_project:
-            project_name = f"{lead.first_name} {lead.last_name} - {lead.city or 'Project'}"
-            project = Project.objects.create(
-                project_name=project_name,
-                lead_source=lead,
-                amount=boq.grand_total,
-                status='In Progress',
-                user=request.user
+    from django.db.models import F
+
+    project = get_object_or_404(Project, id=project_id)
+    lead = project.lead_source  # required for invoice numbering
+
+    # Get BOQ form inputs
+    tax_rate = Decimal(request.POST.get('tax_rate', '18.00'))
+    overall_discount_percentage = Decimal(request.POST.get('overall_discount_percentage', '0'))
+    notes = request.POST.get('notes', '')
+
+    # Create BOQ
+    boq = BOQ.objects.create(
+        lead_source=lead,
+        project=project,
+        tax_rate=tax_rate,
+        overall_discount_percentage=overall_discount_percentage,
+        notes=notes,
+        created_by=request.user
+    )
+
+    # Get items arrays
+    sr_nos = request.POST.getlist('sr_no[]')
+    inventory_ids = request.POST.getlist('inventory_id[]')
+    quantities = request.POST.getlist('quantity[]')
+    discounts = request.POST.getlist('discount[]')
+
+    valid_items = [
+        i for i, inv_id in enumerate(inventory_ids)
+        if inv_id and inv_id.strip()
+    ]
+
+    if not valid_items:
+        boq.delete()
+        messages.error(request, "Please add at least 1 item in the BOQ.")
+        return redirect("project_boq_detail", project_id=project_id)
+
+    items_created = 0
+
+    for i in valid_items:
+        try:
+            inventory = get_object_or_404(InventoryItem, id=int(inventory_ids[i]))
+            quantity = int(quantities[i])
+            discount = Decimal(discounts[i]) if discounts[i] else Decimal('0')
+
+            boq_item = BOQItem.objects.create(
+                boq=boq,
+                sr_no=int(sr_nos[i]),
+                inventory_item=inventory,
+                quantity=quantity,
+                discount_percentage=discount
             )
-            boq.project = project
-            boq.save()
-            lead.has_project = True
-            lead.save()
-        elif boq.project:
-            # Update existing project amount
-            boq.project.amount = boq.grand_total
-            boq.project.save()
-        
-        messages.success(request, f'BOQ {boq.invoice_number} created successfully with {items_created} items!')
-        return redirect('view_boq', boq_id=boq.id)
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        messages.error(request, f'Error creating BOQ: {str(e)}')
-        return redirect('lead_detail', lead_id=lead_id)
+
+            items_created += 1
+
+            # 🔥 Reduce inventory stock safely
+            inventory.available_quantity = F('available_quantity') - quantity
+            inventory.save()
+
+            # If stock not sufficient → create order requirement
+            if not boq_item.has_sufficient_stock:
+                shortage = boq_item.quantity - boq_item.available_quantity
+
+                InventoryOrderRequirement.objects.create(
+                    inventory_item=inventory,
+                    project=project,
+                    boq=boq,
+                    boq_item=boq_item,
+                    required_quantity=quantity,
+                    available_quantity=boq_item.available_quantity,
+                    shortage_quantity=shortage,
+                    status='pending'
+                )
+
+        except Exception as e:
+            messages.warning(request, f"Error adding BOQ item {i+1}: {str(e)}")
+            continue
+
+    if items_created == 0:
+        boq.delete()
+        messages.error(request, "No BOQ items could be saved!")
+        return redirect("project_boq_detail", project_id=project_id)
+
+    # Calculate totals
+    boq.calculate_totals()
+    boq.refresh_from_db()
+
+    # Update project amount with BOQ total
+    project.amount = boq.grand_total
+    project.save()
+
+    messages.success(request, f"BOQ {boq.invoice_number} created successfully!")
+    return redirect("view_boq", boq_id=boq.id)
 
 @login_required
 @user_passes_test(lambda u: has_group(u, 'project_permission_edit') or has_group(u, 'admin'))
@@ -837,39 +865,7 @@ def get_inventory_requirements(request, item_id):
         }, status=500)
 
 
-@login_required
-def inventory(request):
-    """Display inventory items with enhanced tracking - FIXED VERSION"""
-    items = InventoryItem.objects.all().order_by('item_name')
-    
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        items = items.filter(item_name__icontains=search_query)
-    
-    # Annotate with order requirements count
-    from django.db.models import Count, Sum
-    items = items.annotate(
-        requirements_count=Count('order_requirements'),
-        total_shortage=Sum('order_requirements__shortage_quantity')
-    )
-    
-    # Calculate stats
-    low_stock_count = items.filter(available_quantity__lt=10, available_quantity__gt=0).count()
-    out_of_stock_count = items.filter(available_quantity=0).count()
-    
-    # Items with pending requirements
-    items_with_requirements = items.filter(requirements_count__gt=0).count()
-    
-    context = {
-        'items': items,
-        'search_query': search_query,
-        'low_stock_count': low_stock_count,
-        'out_of_stock_count': out_of_stock_count,
-        'items_with_requirements': items_with_requirements,
-    }
-    
-    return render(request, 'lms/inventory.html', context)
+
 @login_required
 @require_POST
 def add_inventory_item(request):
@@ -1038,15 +1034,25 @@ def delete_boq(request, boq_id):
         return redirect('lead_detail', lead_id=lead_id)
 
 
+
+
 @login_required
+@user_passes_test(lambda u: has_group(u, 'inventory_access_view') or has_group(u, 'admin'))
 def inventory(request):
-    """Display inventory items with enhanced tracking"""
+    """Display inventory items with enhanced tracking - FIXED VERSION"""
     items = InventoryItem.objects.all().order_by('item_name')
     
     # Search functionality
     search_query = request.GET.get('search', '')
     if search_query:
         items = items.filter(item_name__icontains=search_query)
+    
+    # Annotate with order requirements count
+    from django.db.models import Count, Sum
+    items = items.annotate(
+        requirements_count=Count('order_requirements'),
+        total_shortage=Sum('order_requirements__shortage_quantity')
+    )
     
     # Calculate stats
     low_stock_count = items.filter(available_quantity__lt=10, available_quantity__gt=0).count()
@@ -1063,6 +1069,109 @@ def inventory(request):
     
     return render(request, 'lms/inventory.html', context)
 
+# Add this function to your lms/views.py file
+# Place it near your other inventory-related functions
+
+@login_required
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_POST
+def upload_inventory_excel(request):
+    """Upload inventory items from Excel file"""
+    try:
+        if 'excel_file' not in request.FILES:
+            messages.error(request, 'No file uploaded!')
+            return redirect('inventory')
+        
+        excel_file = request.FILES['excel_file']
+        
+        # Validate file extension
+        if not excel_file.name.endswith(('.xlsx', '.xls')):
+            messages.error(request, 'Invalid file format! Please upload an Excel file (.xlsx or .xls)')
+            return redirect('inventory')
+        
+        # Read Excel file
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(excel_file)
+            ws = wb.active
+        except Exception as e:
+            messages.error(request, f'Error reading Excel file: {str(e)}')
+            return redirect('inventory')
+        
+        # Process rows (skip header)
+        added_count = 0
+        updated_count = 0
+        error_count = 0
+        errors = []
+        
+        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            try:
+                # Expected columns: Item Name, Unit Selling Price, Available Quantity, Quantity to be Ordered
+                if not row or not row[0]:  # Skip empty rows
+                    continue
+                
+                item_name = str(row[0]).strip()
+                unit_selling_price = float(row[1]) if row[1] else 0
+                available_quantity = int(row[2]) if row[2] else 0
+                quantity_to_be_ordered = int(row[3]) if len(row) > 3 and row[3] else 0
+                
+                # Validation
+                if not item_name:
+                    errors.append(f'Row {row_num}: Item name is required')
+                    error_count += 1
+                    continue
+                
+                if unit_selling_price <= 0:
+                    errors.append(f'Row {row_num}: Unit price must be greater than 0')
+                    error_count += 1
+                    continue
+                
+                # Check if item exists
+                existing_item = InventoryItem.objects.filter(item_name__iexact=item_name).first()
+                
+                if existing_item:
+                    # Update existing item (add to existing quantities)
+                    existing_item.available_quantity += available_quantity
+                    if quantity_to_be_ordered > 0:
+                        existing_item.quantity_to_be_ordered += quantity_to_be_ordered
+                    existing_item.unit_selling_price = unit_selling_price  # Update price
+                    existing_item.save()
+                    updated_count += 1
+                else:
+                    # Create new item
+                    InventoryItem.objects.create(
+                        item_name=item_name,
+                        unit_selling_price=unit_selling_price,
+                        available_quantity=available_quantity,
+                        quantity_to_be_ordered=quantity_to_be_ordered
+                    )
+                    added_count += 1
+                
+            except Exception as e:
+                errors.append(f'Row {row_num}: {str(e)}')
+                error_count += 1
+                continue
+        
+        # Success message
+        if added_count > 0 or updated_count > 0:
+            messages.success(request, 
+                f'Excel upload completed! Added: {added_count}, Updated: {updated_count}, Errors: {error_count}')
+        
+        # Show errors if any
+        if errors:
+            error_message = '<br>'.join(errors[:10])  # Show first 10 errors
+            if len(errors) > 10:
+                error_message += f'<br>... and {len(errors) - 10} more errors'
+            from django.utils.safestring import mark_safe
+            messages.warning(request, mark_safe(f'Some rows had errors:<br>{error_message}'))
+        
+        return redirect('inventory')
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        messages.error(request, f'Error processing Excel file: {str(e)}')
+        return redirect('inventory')
 
 @login_required
 def get_inventory_requirements(request, item_id):
@@ -1121,7 +1230,7 @@ from django.conf import settings
 @login_required
 @user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
 def dashboard(request):
-    """Dynamic and filterable dashboard — with LeadSource filters and pie chart"""
+    """Dynamic and filterable dashboard with inventory and city-wise sales"""
     user = request.user
 
     # === FILTERS ===
@@ -1172,15 +1281,16 @@ def dashboard(request):
     lead_source_counts = dict(
         projects.values('lead_source__first_name', 'lead_source__last_name')
                 .annotate(count=Count('id'))
-                .order_by('-count')
+                .order_by('-count')[:8]
                 .values_list('lead_source__first_name', 'count')
     )
 
     # === CITY DISTRIBUTION ===
     city_counts = dict(
-        projects.values('lead_source__city')
+        projects.exclude(lead_source__city__isnull=True)
+                .values('lead_source__city')
                 .annotate(count=Count('id'))
-                .order_by('-count')
+                .order_by('-count')[:10]
                 .values_list('lead_source__city', 'count')
     )
 
@@ -1193,8 +1303,32 @@ def dashboard(request):
     win_rate = round((won_count / total_projects * 100), 1) if total_projects > 0 else 0
     conversion_rate = win_rate
 
-    # === TOP LEADS ===
-    top_leads = projects.filter(amount__gt=0).order_by('-amount')[:5]
+    # === TOP PROJECTS ===
+    top_leads = projects.filter(amount__gt=0).order_by('-amount')[:10]
+
+    # === TOP SELLING INVENTORY ===
+    from django.db.models import F
+    
+    top_inventory = (
+        BOQItem.objects
+        .filter(boq__status='approved')
+        .values('inventory_item__id', 'inventory_item__item_name')
+        .annotate(
+            total_sold=Sum('quantity'),
+            total_revenue=Sum(F('quantity') * F('unit_price'))
+        )
+        .order_by('-total_revenue')[:10]
+    )
+
+    # Format inventory data
+    top_inventory_list = [
+        {
+            'item_name': item['inventory_item__item_name'],
+            'total_sold': item['total_sold'],
+            'total_revenue': item['total_revenue']
+        }
+        for item in top_inventory
+    ]
 
     # === REVENUE TREND ===
     today = timezone.now().date()
@@ -1218,9 +1352,18 @@ def dashboard(request):
         revenue_data.append(float(month_revenue))
 
     # === FILTER OPTIONS ===
-    all_leads = LeadSource.objects.all()
-    all_cities = list(LeadSource.objects.exclude(city__isnull=True).values_list('city', flat=True).distinct())
-    all_statuses = list(Project.objects.values_list('status', flat=True).distinct())
+    all_leads = LeadSource.objects.all().order_by('first_name')
+    all_cities = list(
+        LeadSource.objects.exclude(city__isnull=True)
+        .values_list('city', flat=True)
+        .distinct()
+        .order_by('city')
+    )
+    all_statuses = list(
+        Project.objects.values_list('status', flat=True)
+        .distinct()
+        .order_by('status')
+    )
 
     context = {
         'total_billing': int(total_revenue),
@@ -1231,6 +1374,7 @@ def dashboard(request):
         'lead_source_counts': json.dumps(lead_source_counts),
         'city_counts': json.dumps(city_counts),
         'top_leads': top_leads,
+        'top_inventory': top_inventory_list,
         'revenue_labels': json.dumps(months),
         'revenue_data': json.dumps(revenue_data),
         'all_leads': all_leads,
@@ -1240,10 +1384,32 @@ def dashboard(request):
         'city_filter': city_filter,
         'status_filter': status_filter,
     }
-    print(lead_source_counts)
-
 
     return render(request, 'lms/dashboard.html', context)
+
+@login_required
+@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_POST
+def delete_inventory_item(request, item_id):
+    """
+    Soft-delete (or hard-delete) an inventory item.
+    Only users with edit permission can do it.
+    """
+    try:
+        item = get_object_or_404(InventoryItem, id=item_id)
+
+        # OPTIONAL: protect items that are already used in BOQs
+        if BOQItem.objects.filter(inventory_item=item).exists():
+            messages.error(request,
+                f'Cannot delete “{item.item_name}” – it is used in one or more BOQs.')
+            return redirect('inventory')
+
+        item_name = item.item_name
+        item.delete()
+        messages.success(request, f'Item “{item_name}” deleted successfully!')
+    except Exception as e:
+        messages.error(request, f'Error deleting item: {str(e)}')
+    return redirect('inventory')
 
 
 # ============================================================================
@@ -1253,7 +1419,7 @@ def dashboard(request):
 @login_required
 @user_passes_test(lambda u: has_group(u, 'ongoing_projects_access') or has_group(u, 'admin'))
 def ongoing_projects(request):
-    projects = Project.objects.exclude(status='open').select_related('lead_source').order_by('-id')
+    projects = Project.objects.exclude(status__in=['open', 'contacted']).select_related('lead_source').order_by('-id')
     return render(request, 'lms/ongoing_projects.html', {'projects': projects})
 
 
@@ -1296,6 +1462,25 @@ def project_detail(request, project_id):
     
     return render(request, 'lms/project_detail.html', context)
 
+@login_required
+@require_POST
+def update_invoice_number(request, boq_id):
+    boq = get_object_or_404(BOQ, id=boq_id)
+    new_invoice = request.POST.get("invoice_number", "").strip()
+
+    if not new_invoice:
+        messages.error(request, "Invoice number cannot be empty.")
+        return redirect("view_boq", boq_id=boq_id)
+
+    if BOQ.objects.filter(invoice_number=new_invoice).exclude(id=boq_id).exists():
+        messages.error(request, "Invoice number already exists.")
+        return redirect("view_boq", boq_id=boq_id)
+
+    boq.invoice_number = new_invoice
+    boq.save()
+
+    messages.success(request, "Invoice number updated successfully!")
+    return redirect("view_boq", boq_id=boq_id)
 
 @login_required
 @require_POST
@@ -1359,6 +1544,7 @@ def tasks(request):
     projects = Project.objects.all()
     users = User.objects.all()
     is_admin = request.user.groups.filter(name="admin").exists()
+    is_task_role = request.user.groups.filter(name="task_permission_edit").exists()
     notifications_qs = Notification.objects.filter(user=request.user).order_by('-created_at')
     unread_count = notifications_qs.filter(is_read=False).count()
     notifications = notifications_qs[:5]
@@ -1372,7 +1558,8 @@ def tasks(request):
         "users": users,
         "is_admin": is_admin, 
         "notifications": notifications,
-        "unread_count": unread_count
+        "unread_count": unread_count,
+        "is_task_role":is_task_role
     }
 
 
@@ -1408,6 +1595,7 @@ def add_task(request):
             due_date=due_date if due_date else None,
             project=project,
             user=user,
+            assigned_by=request.user,
             completed=False,
             priority=priority
         )
@@ -1494,23 +1682,6 @@ def toggle_task(request, task_id):
 # INVENTORY VIEWS
 # ============================================================================
 
-@login_required
-@user_passes_test(lambda u: has_group(u, 'inventory_access_view') or has_group(u, 'admin'))
-def inventory(request):
-    """Display inventory items"""
-    items = InventoryItem.objects.all().order_by('item_name')
-    
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        items = items.filter(item_name__icontains=search_query)
-    
-    context = {
-        'items': items,
-        'search_query': search_query,
-    }
-    
-    return render(request, 'lms/inventory.html', context)
 
 
 @login_required
@@ -1638,31 +1809,6 @@ def update_inventory_item(request, item_id):
         return redirect('inventory')
 
 
-@login_required
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
-def inventory(request):
-    """Display inventory items with enhanced tracking"""
-    items = InventoryItem.objects.all().order_by('item_name')
-    
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        items = items.filter(item_name__icontains=search_query)
-    
-    # Calculate stats
-    low_stock_count = items.filter(available_quantity__lt=10, available_quantity__gt=0).count()
-    out_of_stock_count = items.filter(available_quantity=0).count()
-    total_to_order = sum(item.quantity_to_be_ordered for item in items)
-    
-    context = {
-        'items': items,
-        'search_query': search_query,
-        'low_stock_count': low_stock_count,
-        'out_of_stock_count': out_of_stock_count,
-        'total_to_order': total_to_order,
-    }
-    
-    return render(request, 'lms/inventory.html', context)
 
 # ============================================================================
 # EVENT/CALENDAR VIEWS

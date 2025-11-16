@@ -45,7 +45,7 @@
 
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold">Task Management</h1>
-      {% if is_admin %}
+      {% if is_admin or is_task_role %}
         <button id="newTaskBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2 transition-all">
           <i class="fa-solid fa-plus"></i> New Task
         </button>
@@ -119,6 +119,15 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
           <div id="viewTaskAssignee" class="p-3 bg-purple-50 rounded-lg text-purple-800 font-medium flex items-center gap-2">
+            <i class="fa-solid fa-user"></i>
+            <span></span>
+          </div>
+        </div>
+
+        <!-- Assigned By -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Assigned By</label>
+          <div id="viewTaskAssigner" class="p-3 bg-purple-50 rounded-lg text-purple-800 font-medium flex items-center gap-2">
             <i class="fa-solid fa-user"></i>
             <span></span>
           </div>
@@ -336,6 +345,7 @@
             priority: row.dataset.taskPriority,
             project: row.dataset.taskProject,
             assignee: row.dataset.taskAssignee,
+            assigner: row.dataset.taskAssigner,
             dueDate: row.dataset.taskDueDate,
             completed: row.dataset.taskCompleted === 'True'
           };
@@ -345,6 +355,7 @@
           document.getElementById('viewTaskDescription').textContent = taskData.description;
           document.getElementById('viewTaskProject').textContent = taskData.project;
           document.getElementById('viewTaskAssignee').querySelector('span').textContent = taskData.assignee;
+          document.getElementById('viewTaskAssigner').querySelector('span').textContent = taskData.assigner;
           document.getElementById('viewTaskDueDate').querySelector('span').textContent = new Date(taskData.dueDate).toLocaleString();
 
           // Priority styling

@@ -30,7 +30,6 @@
           <option value="boq">BOQ</option>
           <option value="advanced">Advanced</option>
           <option value="won">Won</option>
-          <option value="closed">Closed</option>
           <option value="lost">Lost</option>
         </select>
         
@@ -71,14 +70,24 @@
     </td>
               <td class="px-6 py-3">₹{{ project.amount|floatformat:2 }}</td>
               <td class="px-6 py-3">{{ project.expected_closure|date:"M d, Y" }}</td>
-              <td class="px-6 py-3">
-                <span class="px-2 py-1 rounded-full text-xs font-semibold 
-                  {% if project.status == 'won' %}bg-green-100 text-green-700
-                  {% elif project.status == 'lost' %}bg-red-100 text-red-700
-                  {% else %}bg-yellow-100 text-yellow-700{% endif %}">
-                  {{ project.status }}
-                </span>
-              </td>
+<td class="px-6 py-3">
+  <select 
+    class="status-select px-2 py-1 rounded-lg text-xs font-semibold border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer
+    {% if project.status == 'won' %}bg-green-100 text-green-700
+    {% elif project.status == 'lost' %}bg-red-100 text-red-700
+    {% elif project.status == 'In Progress' %}bg-blue-100 text-blue-700
+    {% else %}bg-yellow-100 text-yellow-700{% endif %}"
+    data-project-id="{{ project.id }}"
+    onchange="updateProjectStatus(this)">
+    <option value="open" {% if project.status == 'open' %}selected{% endif %}>Open</option>
+    <option value="contacted" {% if project.status == 'contacted' %}selected{% endif %}>Contacted</option>
+    <option value="boq" {% if project.status == 'boq' %}selected{% endif %}>BOQ</option>
+    <option value="advanced" {% if project.status == 'advanced' %}selected{% endif %}>Advanced</option>
+    <option value="In Progress" {% if project.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+    <option value="won" {% if project.status == 'won' %}selected{% endif %}>Won</option>
+    <option value="lost" {% if project.status == 'lost' %}selected{% endif %}>Lost</option>
+  </select>
+</td>
               <td class="px-6 py-3 text-center">
                 <a href="{% url 'project_boq_detail' project.id %}" class="text-blue-500 hover:text-blue-700">
                   <i class="fa-solid fa-pen"></i>
@@ -183,7 +192,6 @@
               <option value="boq">BOQ</option>
               <option value="advanced">Advanced</option>
               <option value="won">Won</option>
-              <option value="closed">Closed</option>
               <option value="lost">Lost</option>
             </select>
           </div>
@@ -450,18 +458,21 @@ cities.forEach(city => {
 function applyProjectFilters() {
   const query = searchInput ? searchInput.value.toLowerCase() : '';
   const selectedCity = filterCity.value;
-  const selectedStatus = filterStatus.value;
+  const selectedStatus = filterStatus.value.toLowerCase();
   let visibleCount = 0;
 
   rows.forEach(row => {
     const text = row.textContent.toLowerCase();
     const rowCity = row.dataset.city?.trim();
-    const rowStatus = row.querySelector('span')?.textContent.toLowerCase();
+
+    // 🔥 FIXED: Read status from dropdown
+    const statusSelect = row.querySelector('.status-select');
+    const rowStatus = statusSelect ? statusSelect.value.toLowerCase() : '';
 
     const matches =
       (!query || text.includes(query)) &&
       (!selectedCity || rowCity === selectedCity) &&
-      (!selectedStatus || rowStatus.includes(selectedStatus));
+      (!selectedStatus || rowStatus === selectedStatus);
 
     row.style.display = matches ? '' : 'none';
     if (matches) visibleCount++;
@@ -469,6 +480,7 @@ function applyProjectFilters() {
 
   document.getElementById('projectCount').textContent = visibleCount;
 }
+
 
 // Event listeners
 if (searchInput) searchInput.addEventListener('input', applyProjectFilters);
@@ -566,9 +578,58 @@ const payload = {
       XLSX.writeFile(wb, `Leads ${new Date().toISOString().slice(0,10)}.xlsx`);
       showToast('Exported successfully!');
     });
-
+// Update Project Status
+function updateProjectStatus(selectElement) {
+  const projectId = selectElement.getAttribute('data-project-id');
+  const newStatus = selectElement.value;
+  const csrftoken = getCookie('csrftoken');
+  
+  // Store original value in case of error
+  const originalValue = selectElement.dataset.originalStatus || selectElement.value;
+  selectElement.dataset.originalStatus = newStatus;
+  
+  // Update visual styling immediately
+  selectElement.className = `status-select px-2 py-1 rounded-lg text-xs font-semibold border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer`;
+  
+  if (newStatus === 'won') {
+    selectElement.classList.add('bg-green-100', 'text-green-700');
+  } else if (newStatus === 'lost') {
+    selectElement.classList.add('bg-red-100', 'text-red-700');
+  } else if (newStatus === 'In Progress') {
+    selectElement.classList.add('bg-blue-100', 'text-blue-700');
+  } else {
+    selectElement.classList.add('bg-yellow-100', 'text-yellow-700');
+  }
+  
+  // Send update to server
+  fetch(`/projects/${projectId}/update-status/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrftoken
+    },
+    body: `status=${encodeURIComponent(newStatus)}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showToast(data.message || 'Status updated successfully', 'success');
+    } else {
+      showToast(data.message || 'Failed to update status', 'error');
+      // Revert to original value on error
+      selectElement.value = originalValue;
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showToast('Error updating status', 'error');
+    // Revert to original value on error
+    selectElement.value = originalValue;
+  });
+}
   </script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 
   {% endblock %}
 </body>

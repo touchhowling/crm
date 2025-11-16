@@ -13,6 +13,9 @@
             Assigned To
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Assigned By
+          </th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
             Priority
           </th>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -35,6 +38,7 @@
             data-task-priority="{{ task.priority }}"
             data-task-project="{{ task.project.project_name }}"
             data-task-assignee="{{ task.user.username }}"
+            data-task-assigner="{{ task.assigned_by.username }}"
             data-task-due-date="{{ task.due_date|date:'Y-m-d\TH:i' }}"
             data-task-completed="{{ task.completed }}">
           <td class="px-6 py-4">
@@ -61,6 +65,14 @@
                 {{ task.user.first_name|slice:":1"|upper|default:"U" }}
               </div>
               <span class="text-sm text-gray-900">{{ task.user.username }}</span>
+            </div>
+          </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                {{ task.assigned_by.first_name|slice:":1"|upper|default:"U" }}
+              </div>
+              <span class="text-sm text-gray-900">{{ task.assigned_by.username }}</span>
             </div>
           </td>
           <td class="px-6 py-4 whitespace-nowrap">

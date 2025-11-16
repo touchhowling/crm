@@ -7,7 +7,7 @@
   <div class="flex items-center gap-2 text-sm text-gray-500 mb-6">
     <a href="/dashboard/" class="hover:text-blue-600">Home</a> /
     <a href="/leads/" class="hover:text-blue-600">Leads</a> /
-    <a href="/lead/{{ boq.lead_source.id }}/" class="hover:text-blue-600">{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</a> /
+    <a href="/project/{{ boq.project.id }}/" class="hover:text-blue-600">{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</a> /
     <span class="text-gray-900">{{ boq.invoice_number }}</span>
   </div>
 
@@ -80,10 +80,20 @@
         BOQ Details
       </h3>
       <dl class="space-y-3 text-sm">
+      <div class="flex items-center justify-between">
         <div>
           <dt class="text-gray-500">Invoice Number</dt>
-          <dd class="font-medium">{{ boq.invoice_number }}</dd>
+          <dd id="invoiceNumberDisplay" class="font-medium">{{ boq.invoice_number }}</dd>
         </div>
+
+        <!-- ✏️ Pencil Icon -->
+        <button onclick="openInvoiceModal()" 
+                class="text-blue-600 hover:text-blue-800 text-sm ml-3"
+                title="Edit Invoice Number">
+            <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+      </div>
+
         <div>
           <dt class="text-gray-500">Tax Rate</dt>
           <dd class="font-medium">{{ boq.tax_rate }}% GST</dd>
@@ -215,7 +225,7 @@
 
   <!-- Actions -->
   <div class="flex gap-3 justify-end">
-    <a href="/lead/{{ boq.lead_source.id }}/" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+    <a href="/project/{{ boq.lead_source.id }}/" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
       Back to Lead
     </a>
     {% if boq.status != 'approved' %}
@@ -227,5 +237,84 @@
     </form>
     {% endif %}
   </div>
+  <!-- Edit Invoice Modal -->
+<div id="editInvoiceModal" class="modal">
+  <div class="modal-content max-w-md">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Edit Invoice Number</h2>
+        <button onclick="closeInvoiceModal()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+
+      <form method="POST" action="{% url 'update_invoice_number' boq.id %}">
+        {% csrf_token %}
+
+        <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+        <input 
+            type="text" 
+            name="invoice_number" 
+            value="{{ boq.invoice_number }}"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+            required>
+
+        <div class="flex justify-end gap-3 mt-6">
+          <button type="button" onclick="closeInvoiceModal()" 
+                  class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 </main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openInvoiceModal() {
+  document.getElementById("editInvoiceModal").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+
+function closeInvoiceModal() {
+  document.getElementById("editInvoiceModal").classList.remove("show");
+  document.body.style.overflow = "auto";
+}
+
+// Close modal on click outside
+document.getElementById("editInvoiceModal")?.addEventListener("click", function(e) {
+  if (e.target === this) closeInvoiceModal();
+});
+</script>
+
+<style>
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 90%;
+}
+</style>
 {% endblock %}

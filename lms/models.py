@@ -11,7 +11,6 @@ class LeadSource(models.Model):
         ('boq', 'BOQ'),
         ('advanced', 'Advanced'),
         ('won', 'Won'),
-        ('closed', 'Closed'),
         ('lost', 'Lost'),
     ]
     
@@ -287,7 +286,20 @@ class InventoryOrderRequirement(models.Model):
 
 
 class Task(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        related_name="tasks_assigned_to"
+    )
+
+    assigned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="tasks_assigned_by"
+    )
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -302,7 +314,7 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
-    
+
     @property
     def is_active(self):
         """Returns True if task not completed and before due date"""

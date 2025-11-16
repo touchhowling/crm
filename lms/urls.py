@@ -6,11 +6,12 @@ urlpatterns = [
     path('leads/', views.leads_list, name='leads_list'),
     path('leads/add/', views.add_lead, name='add_lead'),
     path('leads/update-status/', views.update_lead_status, name='update_lead_status'),
-    path('lead/<int:lead_id>/', views.lead_detail, name='lead_detail'),
+    path('project/<int:project_id>/', views.lead_detail, name='lead_detail'),
     path('lead/<int:lead_id>/delete/', views.delete_lead, name='delete_lead'),
-    
+    path("boq/<int:boq_id>/update-invoice/", views.update_invoice_number, name="update_invoice_number"),
+
     # BOQ URLs
-    path('lead/<int:lead_id>/create-boq/', views.create_boq, name='create_boq'),
+    path('projects/<project_id>/create-boq/', views.create_boq, name='create_boq'),
     path('boq/<int:boq_id>/view/', views.view_boq, name='view_boq'),
     path('boq/<int:boq_id>/download/', views.download_boq_pdf, name='download_boq_pdf'),
     path('boq/<int:boq_id>/update/', views.update_boq, name='update_boq'),
@@ -45,7 +46,11 @@ urlpatterns = [
     path('inventory/', views.inventory, name='inventory'),
     path('inventory/add/', views.add_inventory_item, name='add_inventory_item'),
     path('inventory/<int:item_id>/update/', views.update_inventory_item, name='update_inventory_item'),
-    
+    path('inventory/<int:item_id>/delete/', views.delete_inventory_item, name='delete_inventory_item'),
+    path('inventory/upload-excel/', views.upload_inventory_excel, name='upload_inventory_excel'),
+    path('api/inventory/<int:item_id>/requirements/', views.get_inventory_requirements, name='get_inventory_requirements'),
+    path('projects/<int:project_id>/update-status/', views.update_project_status, name='update_project_status'),
+
     # Notifications
     path('notifications/', views.notifications, name='notifications'),
     path('notifications/mark-read/', views.mark_notifications_read, name='mark_notifications_read'),

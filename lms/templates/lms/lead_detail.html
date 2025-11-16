@@ -55,11 +55,11 @@
           <span class="text-sm text-gray-500">Current Status</span>
           <div class="mt-1">
             <span class="px-3 py-1 text-sm font-medium rounded-full 
-              {% if lead.status == 'won' %}bg-green-100 text-green-700
-              {% elif lead.status == 'boq' %}bg-purple-100 text-purple-700
-              {% elif lead.status == 'advanced' %}bg-yellow-100 text-yellow-700
+              {% if project.status == 'won' %}bg-green-100 text-green-700
+              {% elif project.status == 'boq' %}bg-purple-100 text-purple-700
+              {% elif project.status == 'advanced' %}bg-yellow-100 text-yellow-700
               {% else %}bg-blue-100 text-blue-700{% endif %}">
-              {{ lead.get_status_display }}
+              {{ project.status }}
             </span>
           </div>
         </div>
