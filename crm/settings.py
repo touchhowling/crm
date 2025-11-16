@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-pg#=7n^^ugid@cp-ge-_1tiu=0$e6y(=428@u_13$nyq3(5u1c'
 DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','methodically-mitigatory-rhona.ngrok-free.dev']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','methodically-mitigatory-rhona.ngrok-free.dev','35.206.89.105']
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
