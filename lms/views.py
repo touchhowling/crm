@@ -1227,6 +1227,7 @@ def api_leads_summary(request):
 from django.db import models
 from django.conf import settings
 
+
 @login_required
 @user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
 def dashboard(request):
@@ -1294,14 +1295,24 @@ def dashboard(request):
                 .values_list('lead_source__city', 'count')
     )
 
-    # === REVENUE & KPIs ===
+    # === REVENUE & KPIs (FIXED) ===
+    # Calculate total revenue from ALL projects with amount > 0
+    projects_with_amount = projects.exclude(amount__isnull=True).exclude(amount=0)
+    total_revenue = projects_with_amount.aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Count won projects for win rate
     won_projects = projects.filter(status='won')
-    total_revenue = won_projects.aggregate(total=Sum('amount'))['total'] or 0
-
     won_count = won_projects.count()
-    avg_deal = (total_revenue / won_count) if won_count > 0 else 0
+    
+    # Calculate average deal size from projects with amounts
+    total_projects_with_amount = projects_with_amount.count()
+    avg_deal = (total_revenue / total_projects_with_amount) if total_projects_with_amount > 0 else 0
+    
+    # Win rate = won projects / total projects
     win_rate = round((won_count / total_projects * 100), 1) if total_projects > 0 else 0
-    conversion_rate = win_rate
+    
+    # Conversion rate: projects with amount / total projects
+    conversion_rate = round((total_projects_with_amount / total_projects * 100), 1) if total_projects > 0 else 0
 
     # === TOP PROJECTS ===
     top_leads = projects.filter(amount__gt=0).order_by('-amount')[:10]
@@ -1343,7 +1354,8 @@ def dashboard(request):
         month_end = next_month - timedelta(days=1)
 
         month_revenue = projects.filter(
-            status='won',
+            amount__isnull=False,
+            amount__gt=0,
             snapshot_d__date__gte=month_start,
             snapshot_d__date__lte=month_end
         ).aggregate(total=Sum('amount'))['total'] or 0
@@ -1536,6 +1548,8 @@ def tasks(request):
         tasks = Task.objects.all()
     else:
         tasks = Task.objects.filter(user=user)
+    
+    
 
     # Segregation logic
     active_tasks = [t for t in tasks if not t.completed and t.due_date > timezone.now()]

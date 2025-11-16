@@ -1,0 +1,15 @@
+Django
+psycopg2-binary
+pillow
+gunicorn
+whitenoise
+python-decouple
+python-dotenv
+xhtml2pdf
+reportlab
+django-cors-headers
+django-crispy-forms
+crispy-bootstrap5
+django-widget-tweaks
+djangorestframework
+httpx
