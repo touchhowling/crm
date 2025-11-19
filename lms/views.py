@@ -1542,19 +1542,24 @@ def add_project(request):
 @user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
 def tasks(request):
     user = request.user
-    print(user)
-    # Role-based filtering
-    if user.groups.filter(name="admin").exists():
-        tasks = Task.objects.all()
-    else:
-        tasks = Task.objects.filter(user=user)
-    
-    
-
-    # Segregation logic
-    active_tasks = [t for t in tasks if not t.completed and t.due_date > timezone.now()]
-    completed_tasks = [t for t in tasks if t.completed]
-    pending_tasks = [t for t in tasks if not t.completed and t.due_date <= timezone.now()]
+    # Build two views: Assigned to Me and Assigned by Me
+    assigned_to_qs = Task.objects.filter(user=user)
+    assigned_by_qs = Task.objects.filter(assigned_by=user)
+    now = timezone.now()
+    # Segregation logic for both views
+    assigned_to_active_tasks = [t for t in assigned_to_qs if not t.completed and t.due_date > now]
+    assigned_to_completed_tasks = [t for t in assigned_to_qs if t.completed]
+    assigned_to_pending_tasks = [t for t in assigned_to_qs if not t.completed and t.due_date <= now]
+    assigned_by_active_tasks = [t for t in assigned_by_qs if not t.completed and t.due_date > now]
+    assigned_by_completed_tasks = [t for t in assigned_by_qs if t.completed]
+    assigned_by_pending_tasks = [t for t in assigned_by_qs if not t.completed and t.due_date <= now]
+    # Counters for dynamic display
+    assigned_to_active_count = len(assigned_to_active_tasks)
+    assigned_to_completed_count = len(assigned_to_completed_tasks)
+    assigned_to_pending_count = len(assigned_to_pending_tasks)
+    assigned_by_active_count = len(assigned_by_active_tasks)
+    assigned_by_completed_count = len(assigned_by_completed_tasks)
+    assigned_by_pending_count = len(assigned_by_pending_tasks)
     projects = Project.objects.all()
     users = User.objects.all()
     is_admin = request.user.groups.filter(name="admin").exists()
@@ -1563,19 +1568,33 @@ def tasks(request):
     unread_count = notifications_qs.filter(is_read=False).count()
     notifications = notifications_qs[:5]
 
-
     context = {
-        "active_tasks": active_tasks,
-        "completed_tasks": completed_tasks,
-        "pending_tasks": pending_tasks,
+        # Default view: Assigned to Me
+        "active_tasks": assigned_to_active_tasks,
+        "completed_tasks": assigned_to_completed_tasks,
+        "pending_tasks": assigned_to_pending_tasks,
+        # Full data sets for both views
+        "assigned_to_active_tasks": assigned_to_active_tasks,
+        "assigned_to_completed_tasks": assigned_to_completed_tasks,
+        "assigned_to_pending_tasks": assigned_to_pending_tasks,
+        "assigned_by_active_tasks": assigned_by_active_tasks,
+        "assigned_by_completed_tasks": assigned_by_completed_tasks,
+        "assigned_by_pending_tasks": assigned_by_pending_tasks,
+        # Counters
+        "assigned_to_active_count": assigned_to_active_count,
+        "assigned_to_completed_count": assigned_to_completed_count,
+        "assigned_to_pending_count": assigned_to_pending_count,
+        "assigned_by_active_count": assigned_by_active_count,
+        "assigned_by_completed_count": assigned_by_completed_count,
+        "assigned_by_pending_count": assigned_by_pending_count,
+        # Other context
         "projects": projects,
         "users": users,
         "is_admin": is_admin, 
         "notifications": notifications,
         "unread_count": unread_count,
-        "is_task_role":is_task_role
+        "is_task_role": is_task_role
     }
-
 
     return render(request, "lms/tasks.html", context)
 

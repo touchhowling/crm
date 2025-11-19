@@ -1,386 +1,256 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>BOQ - {{ boq.invoice_number }}</title>
-    <style>
-        @page {
-            size: A4;
-            margin: 1cm;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #333;
-        }
-        
-        .header {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 15px;
-        }
-        
-        .header-left {
-            display: table-cell;
-            width: 60%;
-            vertical-align: top;
-        }
-        
-        .header-right {
-            display: table-cell;
-            width: 40%;
-            text-align: right;
-            vertical-align: top;
-        }
-        
-        .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 5px;
-        }
-        
-        .company-details {
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .invoice-title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 5px;
-        }
-        
-        .invoice-number {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 3px;
-        }
-        
-        .info-section {
-            display: table;
-            width: 100%;
-            margin: 20px 0;
-        }
-        
-        .bill-to {
-            display: table-cell;
-            width: 50%;
-            padding: 15px;
-            background-color: #f9fafb;
-            border-radius: 8px;
-            vertical-align: top;
-        }
-        
-        .invoice-details {
-            display: table-cell;
-            width: 45%;
-            padding: 15px;
-            background-color: #eff6ff;
-            border-radius: 8px;
-            margin-left: 5%;
-            vertical-align: top;
-        }
-        
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        
-        .detail-row {
-            margin-bottom: 5px;
-        }
-        
-        .label {
-            font-weight: bold;
-            color: #666;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        
-        thead {
-            background-color: #2563eb;
-            color: white;
-        }
-        
-        th {
-            padding: 10px 8px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-        
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        tbody tr:nth-child(even) {
-            background-color: #f9fafb;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .stock-warning {
-            color: #dc2626;
-            font-size: 9px;
-            font-style: italic;
-        }
-        
-        .summary {
-            margin-top: 20px;
-            float: right;
-            width: 45%;
-        }
-        
-        .summary-row {
-            display: table;
-            width: 100%;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .summary-row.total {
-            border-top: 2px solid #2563eb;
-            border-bottom: 2px solid #2563eb;
-            font-weight: bold;
-            font-size: 14px;
-            color: #2563eb;
-            margin-top: 10px;
-        }
-        
-        .summary-label {
-            display: table-cell;
-            text-align: left;
-            padding-right: 20px;
-        }
-        
-        .summary-value {
-            display: table-cell;
-            text-align: right;
-            font-weight: 600;
-        }
-        
-        .notes-section {
-            clear: both;
-            margin-top: 40px;
-            padding: 15px;
-            background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            border-radius: 4px;
-        }
-        
-        .notes-title {
-            font-weight: bold;
-            color: #92400e;
-            margin-bottom: 8px;
-        }
-        
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e5e7eb;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .terms {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f9fafb;
-            border-radius: 4px;
-            font-size: 9px;
-        }
-        
-        .terms-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .terms ul {
-            margin: 5px 0;
-            padding-left: 20px;
-        }
-        
-        .terms li {
-            margin-bottom: 3px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Proforma Invoice - {{ boq.invoice_number }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    /* Page settings */
+    @page { size: A4; margin: 18mm; }
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      color: #222;
+      font-size: 11px;
+      line-height: 1.4;
+      -webkit-print-color-adjust: exact;
+    }
+
+    /* Layout containers */
+    .container { max-width: 793px; margin: 0 auto; } /* 210mm width ~ 793px @96dpi */
+    .row { display: flex; gap: 12px; }
+    .col { flex: 1; }
+    .col.w40 { flex: 0 0 40%; }
+    .col.w60 { flex: 0 0 60%; }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #1D4ED8; /* blue */
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .brand {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .logo {
+      width:110px;
+      height:60px;
+      background:#f3f4f6;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:6px;
+      overflow:hidden;
+      border:1px solid #e6eefc;
+    }
+    .company-name { font-size:20px; font-weight:700; color:#1D4ED8; }
+    .company-meta { font-size:10px; color:#4b5563; margin-top:6px; }
+
+    .invoice-title {
+      text-align:right;
+    }
+    .invoice-title .title { font-size:28px; font-weight:800; color:#1D4ED8; }
+    .invoice-meta { text-align:right; font-size:12px; color:#374151; margin-top:6px; }
+    .meta-small { font-size:11px; color:#6b7280; }
+
+    /* Bill / Ship section */
+    .info { display:flex; gap:12px; margin:18px 0; }
+    .panel {
+      background:#fff;
+      border-radius:8px;
+      padding:10px;
+      border:1px solid #e6eefc;
+    }
+    .panel .title { font-size:12px; font-weight:700; color:#1f2937; margin-bottom:6px; }
+    .small { font-size:12px; color:#374151; }
+
+    /* Items table */
+    table { width:100%; border-collapse:collapse; margin-top:14px; }
+    thead th {
+      background:#1D4ED8; color:#fff; padding:10px 8px; font-weight:700; font-size:10px; text-transform:uppercase;
+    }
+    td, th { border-bottom:1px solid #e5e7eb; padding:10px 8px; vertical-align:top; }
+    tbody tr:nth-child(even) { background:#fbfdff; }
+
+    .text-right { text-align:right; }
+    .text-center { text-align:center; }
+
+    /* summary */
+    .summary { width:46%; margin-left:auto; margin-top:12px; border-radius:6px; overflow:hidden; }
+    .summary .row { display:flex; justify-content:space-between; padding:8px 10px; border-bottom:1px solid #eee; background:#fff; }
+    .summary .row.total { border-top:2px solid #1D4ED8; border-bottom:2px solid #1D4ED8; background:#f8fbff; font-weight:700; color:#1d4ed8; }
+
+    /* notes / terms */
+    .notes { margin-top:26px; padding:12px; background:#fff7ed; border-left:4px solid #f59e0b; border-radius:6px; color:#92400e; font-size:12px; }
+    .terms { margin-top:12px; font-size:11px; color:#4b5563; }
+
+    /* footer */
+    .footer { margin-top:30px; font-size:10px; color:#6b7280; text-align:center; border-top:1px dashed #e6eefc; padding-top:10px; }
+
+    /* signature */
+    .signature { margin-top:28px; display:flex; justify-content:space-between; gap:12px; }
+    .sig-block { width:30%; text-align:center; }
+    .sig-line { height:1px; background:#cbd5e1; margin-top:40px; display:block; }
+
+    /* responsive for printing */
+    @media print {
+      .container { width: auto; }
+      .row { gap:8px; }
+      .logo { width:100px; height:56px; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Header -->
+  <div class="container">
+    <!-- HEADER -->
     <div class="header">
-        <div class="header-left">
-            <div class="company-name">{{ company_name }}</div>
-            <div class="company-details">
-                {{ company_address }}<br>
-                Phone: {{ company_phone }}<br>
-                Email: {{ company_email }}<br>
-                {{ company_gst }}
-            </div>
+      <div class="brand">
+        <div class="logo">
+          <!-- optionally render logo image -->
+          {% if company_logo_url %}
+            <img src="{{ company_logo_url }}" alt="Logo" style="max-width:100%; max-height:100%;" />
+          {% else %}
+            <span style="font-size:10px;color:#9ca3af;">Logo</span>
+          {% endif %}
         </div>
-        <div class="header-right">
-            <div class="invoice-title">QUOTATION</div>
-            <div class="invoice-number">{{ boq.invoice_number }}</div>
-            <div class="invoice-number">Date: {{ boq.created_at|date:"d/m/Y" }}</div>
+        <div>
+          <div class="company-name">{{ company_name }}</div>
+          <div class="company-meta">
+            {{ company_address }}<br>
+            Phone: {{ company_phone }} &nbsp;&nbsp; Email: {{ company_email }}<br>
+            GSTIN: {{ company_gst|default:"-" }}
+          </div>
         </div>
+      </div>
+
+      <div class="invoice-title">
+        <div class="title">PROFORMA INVOICE</div>
+        <div class="invoice-meta">
+          <div><strong>Invoice No:</strong> {{ boq.invoice_number }}</div>
+          <div class="meta-small"><strong>Date:</strong> {{ boq.created_at|date:"d M, Y" }}</div>
+          <div class="meta-small"><strong>Quotation Validity:</strong> {{ boq.valid_till|date:"d M, Y"|default:"30 days" }}</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Bill To & Invoice Details -->
-    <div class="info-section">
-        <div class="bill-to">
-            <div class="section-title">Bill To</div>
-            <div class="detail-row">
-                <strong>{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</strong>
-            </div>
-            <div class="detail-row">
-                Phone: {{ boq.lead_source.country_code }}{{ boq.lead_source.phone_number }}
-            </div>
-            {% if boq.lead_source.address %}
-            <div class="detail-row">
-                {{ boq.lead_source.address }}
-            </div>
-            {% endif %}
-            {% if boq.lead_source.city %}
-            <div class="detail-row">
-                {{ boq.lead_source.city }}
-            </div>
-            {% endif %}
+    <!-- BILL TO / SHIP / TRANSPORT -->
+    <div class="row" style="gap:14px;">
+      <div class="col w60 panel">
+        <div class="title">Bill To</div>
+        <div class="small">
+          <strong>{{ boq.lead_source.first_name }} {{ boq.lead_source.last_name }}</strong><br>
+          {{ boq.lead_source.address|default:"" }}<br>
+          {{ boq.lead_source.city|default:"" }}<br>
+          Phone: {{ boq.lead_source.country_code }}{{ boq.lead_source.phone_number }}<br>
+          GSTIN: {{ boq.lead_source.gst|default:"-" }}
         </div>
-        
-        <div class="invoice-details">
-            <div class="section-title">Quote Details</div>
-            <div class="detail-row">
-                <span class="label">Quote Number:</span> {{ boq.invoice_number }}
-            </div>
-            <div class="detail-row">
-                <span class="label">Date:</span> {{ boq.created_at|date:"d M, Y" }}
-            </div>
-            <div class="detail-row">
-                <span class="label">Status:</span> {{ boq.get_status_display }}
-            </div>
-            <div class="detail-row">
-                <span class="label">Created By:</span> {{ boq.created_by.get_full_name|default:boq.created_by.username }}
-            </div>
+      </div>
+
+      <div class="col w40 panel">
+        <div class="title">Details</div>
+        <div class="small">
+          <div><strong>Prepared By:</strong> {{ boq.created_by.get_full_name|default:boq.created_by.username }}</div>
+          <div><strong>Status:</strong> {{ boq.get_status_display }}</div>
+          <div><strong>Delivery Terms:</strong> {{ boq.delivery_terms|default:"Ex-Works" }}</div>
+          <div><strong>Payment Terms:</strong> {{ boq.payment_terms|default:"50% advance, 50% on delivery" }}</div>
         </div>
+      </div>
     </div>
 
-    <!-- Items Table -->
+    <!-- ITEMS TABLE -->
     <table>
-        <thead>
-            <tr>
-                <th style="width: 8%;">Sr.No</th>
-                <th style="width: 35%;">Item Description</th>
-                <th style="width: 12%;" class="text-right">Unit Price</th>
-                <th style="width: 10%;" class="text-center">Qty</th>
-                <th style="width: 12%;" class="text-right">Discount</th>
-                <th style="width: 13%;" class="text-right">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td class="text-center">{{ item.sr_no }}</td>
-                <td>
-                    {{ item.item_name }}
-                    {% if not item.has_sufficient_stock %}
-                    <br><span class="stock-warning">⚠ Only {{ item.available_quantity }} units in stock</span>
-                    {% endif %}
-                </td>
-                <td class="text-right">₹{{ item.unit_price|floatformat:2 }}</td>
-                <td class="text-center">{{ item.quantity }}</td>
-                <td class="text-right">
-                    {% if item.discount_percentage > 0 %}
-                    {{ item.discount_percentage }}%<br>
-                    <span style="font-size: 9px; color: #666;">(₹{{ item.discount_amount|floatformat:2 }})</span>
-                    {% else %}
-                    -
-                    {% endif %}
-                </td>
-                <td class="text-right"><strong>₹{{ item.line_total|floatformat:2 }}</strong></td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th style="width:6%;">Sr.</th>
+          <th style="width:44%;">Item Description</th>
+          <th style="width:12%;" class="text-right">Unit Price</th>
+          <th style="width:8%;" class="text-center">Qty</th>
+          <th style="width:12%;" class="text-right">Discount</th>
+          <th style="width:18%;" class="text-right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="text-center">{{ item.sr_no }}</td>
+          <td>
+            <div style="font-weight:600;">{{ item.item_name }}</div>
+            {% if item.item_description %}<div style="font-size:11px;color:#6b7280;margin-top:6px;">{{ item.item_description }}</div>{% endif %}
+            {% if not item.has_sufficient_stock %}
+              <div style="color:#b91c1c;font-size:11px;margin-top:6px;">⚠ Only {{ item.available_quantity }} in stock</div>
+            {% endif %}
+          </td>
+          <td class="text-right">₹{{ item.unit_price|floatformat:2 }}</td>
+          <td class="text-center">{{ item.quantity }}</td>
+          <td class="text-right">
+            {% if item.discount_percentage and item.discount_percentage > 0 %}
+              {{ item.discount_percentage }}%<br><span style="font-size:11px;color:#6b7280;">(₹{{ item.discount_amount|floatformat:2 }})</span>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="text-right">₹{{ item.line_total|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
 
-    <!-- Summary -->
-    <div class="summary">
-        <div class="summary-row">
-            <div class="summary-label">Subtotal:</div>
-            <div class="summary-value">₹{{ boq.subtotal|floatformat:2 }}</div>
-        </div>
-        
-        {% if boq.total_discount > 0 %}
-        <div class="summary-row" style="color: #dc2626;">
-            <div class="summary-label">Total Discount:</div>
-            <div class="summary-value">-₹{{ boq.total_discount|floatformat:2 }}</div>
-        </div>
-        {% endif %}
-        
-        {% if boq.overall_discount > 0 %}
-        <div class="summary-row" style="color: #dc2626;">
-            <div class="summary-label">Overall Discount ({{ boq.overall_discount_percentage }}%):</div>
-            <div class="summary-value">-₹{{ boq.overall_discount|floatformat:2 }}</div>
-        </div>
-        {% endif %}
-        
-        <div class="summary-row">
-            <div class="summary-label">Tax (GST {{ boq.tax_rate }}%):</div>
-            <div class="summary-value">₹{{ boq.total_tax|floatformat:2 }}</div>
-        </div>
-        
-        <div class="summary-row total">
-            <div class="summary-label">Grand Total:</div>
-            <div class="summary-value">₹{{ boq.grand_total|floatformat:2 }}</div>
-        </div>
+    <!-- SUMMARY -->
+    <div class="summary panel">
+      <div class="row"><div>Subtotal</div><div>₹{{ boq.subtotal|floatformat:2 }}</div></div>
+      {% if boq.total_discount and boq.total_discount > 0 %}
+      <div class="row"><div>Total Discount</div><div>-₹{{ boq.total_discount|floatformat:2 }}</div></div>
+      {% endif %}
+      {% if boq.overall_discount and boq.overall_discount > 0 %}
+      <div class="row"><div>Overall Discount ({{ boq.overall_discount_percentage }}%)</div><div>-₹{{ boq.overall_discount|floatformat:2 }}</div></div>
+      {% endif %}
+      <div class="row"><div>Tax (GST {{ boq.tax_rate }}%)</div><div>₹{{ boq.total_tax|floatformat:2 }}</div></div>
+      <div class="row total"><div>Grand Total</div><div>₹{{ boq.grand_total|floatformat:2 }}</div></div>
     </div>
 
-    <!-- Notes -->
+    <!-- NOTES & TERMS -->
     {% if boq.notes %}
-    <div class="notes-section">
-        <div class="notes-title">Notes:</div>
-        <div>{{ boq.notes|linebreaks }}</div>
+    <div class="notes">
+      <div style="font-weight:700;margin-bottom:6px;">Notes / Remarks</div>
+      <div>{{ boq.notes|linebreaks }}</div>
     </div>
     {% endif %}
 
-    <!-- Terms & Conditions -->
     <div class="terms">
-        <div class="terms-title">Terms & Conditions:</div>
-        <ul>
-            <li>This quotation is valid for 30 days from the date of issue.</li>
-            <li>Payment terms: 50% advance, 50% on completion.</li>
-            <li>Prices are inclusive of GST at {{ boq.tax_rate }}%.</li>
-            <li>Installation and commissioning charges are extra unless specified.</li>
-            <li>Warranty as per manufacturer's terms and conditions.</li>
-            <li>Any disputes are subject to local jurisdiction only.</li>
-        </ul>
+      <strong>Terms & Conditions</strong>
+      <ul>
+        <li>Prices are valid for 30 days unless stated otherwise.</li>
+        <li>Delivery lead time: {{ boq.lead_time|default:"TBD" }}.</li>
+        <li>Payment as per Payment Terms above. All bank charges to be borne by the buyer.</li>
+        <li>Warranty & installation: {{ boq.warranty|default:"As per manufacturer's terms" }}.</li>
+        <li>Goods remain property of seller until payment cleared.</li>
+      </ul>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <strong>{{ company_name }}</strong><br>
-        {{ company_phone }} | {{ company_email }}<br>
-        Thank you for your business!
+    <!-- SIGNATURES -->
+    <div class="signature">
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <div style="font-size:12px;margin-top:6px;">Authorised Signatory</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <div style="font-size:12px;margin-top:6px;">Prepared By</div>
+      </div>
+      <div class="sig-block">
+        <div class="sig-line"></div>
+        <div style="font-size:12px;margin-top:6px;">Receiver's Signature</div>
+      </div>
     </div>
+
+    <div class="footer">
+      Bank: {{ company_bank|default:"-" }} | A/C No: {{ company_bank_account|default:"-" }} | IFSC: {{ company_ifsc|default:"-" }}<br>
+      Company PAN: {{ company_pan|default:"-" }} | Company GST: {{ company_gst|default:"-" }}
+    </div>
+  </div>
 </body>
 </html>

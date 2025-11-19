@@ -1,0 +1,43 @@
+/* Global mobile responsiveness for SecureTech AV CRM */
+
+/* Tabs: allow wrapping on small screens */
+.tabs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Table: horizontal scroll support on small screens */
+.responsive-table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.responsive-table table {
+  min-width: 900px; /* keep columns readable on mobile */
+}
+
+/* Modal cards: adaptive width on mobile */
+.modal-card {
+  width: 95vw;
+  max-width: 640px;
+}
+@media (min-width: 768px) {
+  .modal-card {
+    width: auto;
+    max-width: 48rem; /* align with max-w-2xl style */
+  }
+}
+
+/* Reduce paddings and font size slightly on small screens */
+@media (max-width: 640px) {
+  .mobile-px {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .mobile-text-sm { font-size: 0.875rem !important; }
+  .mobile-hide { display: none !important; }
+}
+
+/* Breadcrumbs and headers */
+.breadcrumbs { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; }
+.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }

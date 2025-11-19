@@ -102,7 +102,7 @@
   </div>
 
   <!-- Inventory Table -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden responsive-table">
     <div class="overflow-x-auto">
       <table id="inventoryTable" class="w-full">
         <thead class="bg-gray-50">
@@ -190,7 +190,7 @@
 
 <!-- Upload Excel Modal -->
 <div id="uploadExcelModal" class="modal">
-  <div class="modal-content max-w-2xl">
+  <div class="modal-content max-w-2xl modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Upload Inventory from Excel</h2>
@@ -256,7 +256,7 @@
 
 <!-- Add Inventory Modal -->
 <div id="addInventoryModal" class="modal">
-  <div class="modal-content max-w-2xl">
+  <div class="modal-content max-w-2xl modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Add Inventory Item</h2>
@@ -323,7 +323,7 @@
 
 <!-- Edit Inventory Modal -->
 <div id="editInventoryModal" class="modal">
-  <div class="modal-content max-w-2xl">
+  <div class="modal-content max-w-2xl modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Edit Inventory Item</h2>
@@ -387,7 +387,7 @@
 
 <!-- Update Stock Modal -->
 <div id="updateStockModal" class="modal">
-  <div class="modal-content max-w-md">
+  <div class="modal-content max-w-md modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Add Stock</h2>
@@ -439,7 +439,7 @@
 
 <!-- Project Requirements Modal -->
 <div id="projectRequirementsModal" class="modal">
-  <div class="modal-content max-w-4xl">
+  <div class="modal-content max-w-4xl modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold">Order Requirements by Project</h2>
@@ -605,7 +605,7 @@ async function showProjectRequirements(itemId) {
           <h3 class="font-semibold text-lg mb-2">${data.item_name}</h3>
           <p class="text-sm text-gray-600">Total required: <span class="font-bold text-red-600">${data.total_required}</span> units</p>
         </div>
-        <div class="overflow-x-auto">
+        <div class="responsive-table overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-gray-50">
               <tr>
