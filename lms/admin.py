@@ -21,9 +21,9 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(LeadSource)
 class LeadSourceAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'phone_number', 'city', 'snapshot_d')
-    list_filter = ('city', 'snapshot_d')
-    search_fields = ('first_name', 'last_name', 'phone_number', 'city')
+    list_display = ('first_name', 'last_name', 'phone_number', 'snapshot_d')
+    list_filter = ('snapshot_d',)
+    search_fields = ('first_name', 'last_name', 'phone_number')
     ordering = ('-snapshot_d',)
 
 @admin.register(InventoryItem)
@@ -33,9 +33,9 @@ class InventoryItemAdmin(admin.ModelAdmin):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('project_name', 'amount', 'status', 'lead_source', 'user', 'expected_closure')
-    list_filter = ('status', 'expected_closure')
-    search_fields = ('project_name', 'lead_source__first_name', 'lead_source__last_name')
+    list_display = ('project_name', 'amount', 'status', 'lead_source', 'user', 'expected_closure','city')
+    list_filter = ('status', 'expected_closure','city')
+    search_fields = ('project_name', 'lead_source__first_name', 'lead_source__last_name','city')
     raw_id_fields = ('lead_source',)
 
 @admin.register(Task)

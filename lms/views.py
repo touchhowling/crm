@@ -71,7 +71,6 @@ def add_inline_lead(request):
         last_name = data.get('last_name')
         country_code = data.get('country_code', '+91')
         phone_number = data.get('phone_number')
-        city = data.get('city')
         address = data.get('address')
 
         if not first_name or not phone_number:
@@ -83,7 +82,6 @@ def add_inline_lead(request):
             last_name=last_name,
             country_code=country_code,
             phone_number=phone_number,
-            city=city,
             address=address,
             user=request.user 
 
@@ -152,7 +150,7 @@ def search_leads(request):
         phone_number__icontains=query
     )
 
-    data = list(leads.values('id', 'first_name', 'last_name', 'city'))
+    data = list(leads.values('id', 'first_name', 'last_name'))
     return JsonResponse(data, safe=False)
 
 
@@ -200,8 +198,8 @@ def leads_list(request):
         leads = LeadSource.objects.all().order_by('-snapshot_d')
         projects = Project.objects.select_related('lead_source').all()
     else:
-        leads = LeadSource.objects.filter(user=request.user).order_by('-snapshot_d')
-        projects = Project.objects.filter(user=request.user).order_by('-snapshot_d')
+        leads = LeadSource.objects.all().order_by('-snapshot_d')
+        projects = Project.objects.select_related('lead_source').all()
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -216,7 +214,7 @@ def leads_list(request):
     # Filter by city
     city_filter = request.GET.get('city', '')
     if city_filter:
-        leads = leads.filter(city=city_filter)
+        projects = projects.filter(city=city_filter)
     
     # Filter by status
     status_filter = request.GET.get('status', '')
@@ -243,7 +241,6 @@ def add_lead(request):
         phone_number = request.POST.get('phone_number', '').strip()
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
-        city = request.POST.get('city', '').strip()
         address = request.POST.get('address', '').strip()
         remarks = request.POST.get('remarks', '').strip()
         status = request.POST.get('status', 'open')
@@ -268,7 +265,6 @@ def add_lead(request):
             phone_number=phone_number,
             first_name=first_name,
             last_name=last_name,
-            city=city,
             address=address,
             remarks=remarks,
             status=status,
@@ -312,7 +308,7 @@ def update_lead_status(request):
         
         # Auto-create project when status becomes "advanced"
         if new_status == 'advanced' and not lead.has_project:
-            project_name = f"{lead.first_name} {lead.last_name} - {lead.city or 'Project'}"
+            project_name = f"{lead.first_name} {lead.last_name} "
             Project.objects.create(
                 project_name=project_name,
                 lead_source=lead,
@@ -1248,7 +1244,7 @@ def dashboard(request):
     if lead_filter:
         projects = projects.filter(lead_source__id=lead_filter)
     if city_filter:
-        projects = projects.filter(lead_source__city__iexact=city_filter)
+        projects = projects.filter(city=city_filter)
     if status_filter:
         projects = projects.filter(status=status_filter)
 
@@ -1287,12 +1283,13 @@ def dashboard(request):
     )
 
     # === CITY DISTRIBUTION ===
+
     city_counts = dict(
-        projects.exclude(lead_source__city__isnull=True)
-                .values('lead_source__city')
+        projects.exclude(city__isnull=True)
+                .values('city')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:10]
-                .values_list('lead_source__city', 'count')
+                .values_list('city', 'count')
     )
 
     # === REVENUE & KPIs (FIXED) ===
@@ -1366,7 +1363,8 @@ def dashboard(request):
     # === FILTER OPTIONS ===
     all_leads = LeadSource.objects.all().order_by('first_name')
     all_cities = list(
-        LeadSource.objects.exclude(city__isnull=True)
+        Project.objects.exclude(city__isnull=True)
+        .exclude(city__exact="")
         .values_list('city', flat=True)
         .distinct()
         .order_by('city')
@@ -1400,6 +1398,69 @@ def dashboard(request):
     return render(request, 'lms/dashboard.html', context)
 
 @login_required
+@require_POST
+def update_project_amount(request, project_id):
+    """Update project amount inline - syncs with lead"""
+    from decimal import Decimal, InvalidOperation
+    
+    try:
+        project = get_object_or_404(Project, id=project_id)
+        
+        # Access control
+        if not (request.user.is_superuser or request.user.groups.filter(name="admin").exists()):
+            if project.user != request.user:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You do not have permission to update this project!'
+                }, status=403)
+        
+        new_amount = request.POST.get('amount')
+        
+        if not new_amount:
+            return JsonResponse({
+                'success': False,
+                'message': 'Amount is required!'
+            }, status=400)
+        
+        try:
+            new_amount = Decimal(new_amount)
+            if new_amount < 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Amount cannot be negative!'
+                }, status=400)
+        except (ValueError, InvalidOperation):
+            return JsonResponse({
+                'success': False,
+                'message': 'Invalid amount format!'
+            }, status=400)
+        
+        # Update project amount
+        old_amount = project.amount
+        project.amount = new_amount
+        project.save()
+        
+        # Also update the latest BOQ's grand total if exists
+        latest_boq = BOQ.objects.filter(project=project).order_by('-created_at').first()
+        if latest_boq:
+            # Recalculate BOQ totals based on items
+            latest_boq.calculate_totals()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Amount updated from ₹{old_amount} to ₹{new_amount}',
+            'new_amount': float(new_amount)
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error: {str(e)}'
+        }, status=500)
+
+@login_required
 @user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
 @require_POST
 def delete_inventory_item(request, item_id):
@@ -1431,7 +1492,7 @@ def delete_inventory_item(request, item_id):
 @login_required
 @user_passes_test(lambda u: has_group(u, 'ongoing_projects_access') or has_group(u, 'admin'))
 def ongoing_projects(request):
-    projects = Project.objects.exclude(status__in=['open', 'contacted']).select_related('lead_source').order_by('-id')
+    projects = Project.objects.exclude(status__in=['open', 'contacted','won','In Progress']).select_related('lead_source').order_by('-id')
     return render(request, 'lms/ongoing_projects.html', {'projects': projects})
 
 
@@ -1506,6 +1567,7 @@ def add_project(request):
         status = request.POST.get('status', 'open')
         lead_source_id = request.POST.get('lead_source_id', '').strip()
         remarks = request.POST.get('remarks', '').strip()
+        city = request.POST.get('city', '').strip()
         
         # Validation
         if not project_name or not lead_source_id:
@@ -1522,7 +1584,8 @@ def add_project(request):
             status=status,
             lead_source=lead_source,
             remarks=remarks,
-            user=request.user
+            user=request.user,
+            city=city
         )
         
         messages.success(request, f'Project "{project_name}" created successfully!')
@@ -2092,7 +2155,8 @@ def mark_task_incomplete(request, task_id):
             channel_layer = get_channel_layer()
             admin_group = Group.objects.filter(name="admin").first()
             if admin_group:
-                for admin in admin_group.user_set.all():
+                other_admins = admin_group.user_set.exclude(id=request.user.id)
+                for admin in other_admins:
                     Notification.objects.create(
                         user=admin,
                         message=f"❌ Task '{task.title}' was marked incomplete by {request.user.username}"

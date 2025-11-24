@@ -166,7 +166,7 @@
                     <td class="px-4 py-3 text-gray-700">
                       {{ project.lead_source.first_name }} {{ project.lead_source.last_name }}
                     </td>
-                    <td class="px-4 py-3 text-gray-600">{{ project.lead_source.city|default:"N/A" }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ project.city|default:"N/A" }}</td>
                     <td class="px-4 py-3 font-bold text-blue-600">₹{{ project.amount|floatformat:0 }}</td>
                     <td class="px-4 py-3">
                       <span class="px-2.5 py-1 rounded-full text-xs font-semibold

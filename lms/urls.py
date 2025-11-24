@@ -1,6 +1,10 @@
 from django.urls import path
 from . import views
 
+from django.contrib.auth import views as auth_views
+from django.urls import path
+
+
 urlpatterns = [
     # Leads
     path('leads/', views.leads_list, name='leads_list'),
@@ -9,7 +13,7 @@ urlpatterns = [
     path('project/<int:project_id>/', views.lead_detail, name='lead_detail'),
     path('lead/<int:lead_id>/delete/', views.delete_lead, name='delete_lead'),
     path("boq/<int:boq_id>/update-invoice/", views.update_invoice_number, name="update_invoice_number"),
-
+    path('projects/<int:project_id>/update-amount/', views.update_project_amount, name='update_project_amount'),
     # BOQ URLs
     path('projects/<project_id>/create-boq/', views.create_boq, name='create_boq'),
     path('boq/<int:boq_id>/view/', views.view_boq, name='view_boq'),
@@ -68,4 +72,13 @@ urlpatterns = [
     path('api/leads/summary/', views.api_leads_summary, name='api_leads_summary'),
     path('api/projects/summary/', views.api_projects_summary, name='api_projects_summary'),
     path('api/notification/count/', views.unread_notification_count, name='unread_notification_count'),
+
+    path('change-password/', auth_views.PasswordChangeView.as_view(
+        template_name='change_password.html',
+        success_url='/password-changed/'
+    ), name='change_password'),
+    
+    path('password-changed/', auth_views.PasswordChangeDoneView.as_view(
+        template_name='password_changed.html'
+    ), name='password_changed'),
 ]

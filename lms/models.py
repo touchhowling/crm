@@ -19,7 +19,6 @@ class LeadSource(models.Model):
     first_name = models.CharField(max_length=120)
     last_name = models.CharField(max_length=120, blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
-    city = models.CharField(max_length=100, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     snapshot_d = models.DateTimeField(auto_now_add=True)
     has_project = models.BooleanField(default=False)
@@ -59,6 +58,7 @@ class Project(models.Model):
     remarks = models.TextField(blank=True, null=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     snapshot_d = models.DateTimeField(auto_now=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.project_name

@@ -40,6 +40,7 @@
 
         </div>
       </div>
+      {% load humanize %}
 
       <!-- Projects Table -->
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -47,25 +48,49 @@
           <table id="projectsTable" class="w-full text-sm text-left">
           <thead class="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
-              <th class="px-6 py-4">Project Name</th>
-              <th class="px-6 py-4">Lead Source</th>
-              <th class="px-6 py-4">City</th>
-              <th class="px-6 py-4">Amount</th>
-              <th class="px-6 py-4">Expected Closure</th>
-              <th class="px-6 py-4">Status</th>
-              <th class="px-6 py-4 text-center">Actions</th>
+              <th class="px-6 py-4 sortable" data-sort="project_name">Project Name</th>
+              <th class="px-6 py-4 sortable" data-sort="lead_source">Lead Source</th>
+              <th class="px-6 py-4 sortable" data-sort="city">City</th>
+              <th class="px-6 py-4 sortable" data-sort="amount">Amount</th>
+              <th class="px-6 py-4 sortable" data-sort="expected_closure">Expected Closure</th>
+              <th class="px-6 py-4 sortable" data-sort="status">Status</th>
+              <th class="px-6 py-4 sortable" data-sort="actions"text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for project in projects %}
-            <tr class="border-b hover:bg-gray-50 transition" data-city="{{ project.lead_source.city|default:'' }}">
+            <tr class="border-b hover:bg-gray-50 transition" data-city="{{ project.city|default:'' }}">
               <td class="px-6 py-3 font-medium">{{ project.project_name }}</td>
               <td class="px-6 py-3">{{ project.lead_source.first_name }} {{ project.lead_source.last_name }}</td>
                   <td class="px-6 py-3">
-      {{ project.lead_source.city|default:"—" }}
+      {{ project.city|default:"—" }}
     </td>
-              <td class="px-6 py-3">₹{{ project.amount|floatformat:2 }}</td>
-              <td class="px-6 py-3">{{ project.expected_closure|date:"M d, Y" }}</td>
+<td class="px-6 py-3">
+  <div class="flex items-center gap-2">
+    <span id="amount-display-{{ project.id }}">₹{{ project.amount|intcomma }}</span>
+    <button onclick="editAmount({{ project.id }} , '{{ project.amount }}')" 
+            class="text-blue-500 hover:text-blue-700 text-sm">
+      <i class="fa-solid fa-pencil"></i>
+    </button>
+  </div>
+  <div id="amount-edit-{{ project.id }}" class="hidden">
+    <div class="flex items-center gap-2">
+      <input type="number" 
+             id="amount-input-{{ project.id }}" 
+             step="0.01" 
+             class="w-32 px-2 py-1 border rounded text-sm"
+             value="{{ project.amount }}">
+      <button onclick="saveAmount({{ project.id }})" 
+              class="text-green-600 hover:text-green-800">
+        <i class="fa-solid fa-check"></i>
+      </button>
+      <button onclick="cancelEdit({{ project.id }})" 
+              class="text-red-600 hover:text-red-800">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+  </div>
+</td>              <td class="px-6 py-3">{{ project.expected_closure|date:"M d, Y" }}</td>
               <td class="px-6 py-3">
                 <span class="px-2 py-1 rounded-full text-xs font-semibold 
                   {% if project.status == 'won' %}bg-green-100 text-green-700
@@ -321,6 +346,51 @@ leadInput?.addEventListener('input', function() {
     }
   });
 });
+// === INLINE AMOUNT EDITING ===
+function editAmount(projectId, currentAmount) {
+  document.getElementById(`amount-display-${projectId}`).classList.add('hidden');
+  document.getElementById(`amount-edit-${projectId}`).classList.remove('hidden');
+  document.getElementById(`amount-input-${projectId}`).focus();
+}
+
+function cancelEdit(projectId) {
+  document.getElementById(`amount-display-${projectId}`).classList.remove('hidden');
+  document.getElementById(`amount-edit-${projectId}`).classList.add('hidden');
+}
+
+function saveAmount(projectId) {
+  const newAmount = document.getElementById(`amount-input-${projectId}`).value;
+  const csrftoken = getCookie('csrftoken');
+  
+  if (!newAmount || parseFloat(newAmount) < 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+  
+  fetch(`/projects/${projectId}/update-amount/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': csrftoken
+    },
+    body: `amount=${newAmount}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Update display with new formatted amount
+      document.getElementById(`amount-display-${projectId}`).textContent = `₹${parseFloat(newAmount).toFixed(2)}`;
+      cancelEdit(projectId);
+      showToast('Amount updated successfully!', 'success');
+    } else {
+      showToast(data.message || 'Failed to update amount', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showToast('Error updating amount', 'error');
+  });
+}
 </script>
   <script>
     // Django Messages
@@ -559,6 +629,33 @@ const payload = {
       XLSX.writeFile(wb, `Ongoing_Projects_${new Date().toISOString().slice(0,10)}.xlsx`);
       showToast('Exported successfully!');
     });
+    document.querySelectorAll(".sortable").forEach(header => {
+  header.addEventListener("click", () => {
+    const table = header.closest("table");
+    const tbody = table.querySelector("tbody");
+    const rows = [...tbody.querySelectorAll("tr")];
+
+    const index = [...header.parentNode.children].indexOf(header);
+    const ascending = !header.classList.contains("asc");
+
+    rows.sort((a, b) => {
+      let A = a.children[index].innerText.replace(/[₹,]/g, '');
+      let B = b.children[index].innerText.replace(/[₹,]/g, '');
+
+      if (!isNaN(A) && !isNaN(B)) {
+        return ascending ? A - B : B - A;
+      }
+      return ascending
+        ? A.localeCompare(B)
+        : B.localeCompare(A);
+    });
+
+    header.classList.toggle("asc", ascending);
+    header.classList.toggle("desc", !ascending);
+
+    rows.forEach(row => tbody.appendChild(row));
+  });
+});
 
   </script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

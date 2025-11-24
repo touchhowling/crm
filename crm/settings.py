@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'lms.apps.LmsConfig',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
