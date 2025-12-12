@@ -924,30 +924,7 @@ def add_inventory_item(request):
         return redirect('inventory')
 
 
-@login_required
-@require_POST
-def update_inventory_item(request, item_id):
-    """Update inventory item quantities"""
-    try:
-        item = get_object_or_404(InventoryItem, id=item_id)
-        
-        available_quantity = request.POST.get('available_quantity')
-        quantity_to_be_ordered = request.POST.get('quantity_to_be_ordered')
-        
-        if available_quantity:
-            item.available_quantity = int(available_quantity)
-        
-        if quantity_to_be_ordered:
-            item.quantity_to_be_ordered = int(quantity_to_be_ordered)
-        
-        item.save()
-        
-        messages.success(request, f'Item "{item.item_name}" updated successfully!')
-        return redirect('inventory')
-        
-    except Exception as e:
-        messages.error(request, f'Error updating item: {str(e)}')
-        return redirect('inventory')
+
 
 
 @login_required
@@ -1102,7 +1079,7 @@ def inventory(request):
 # Place it near your other inventory-related functions
 
 @login_required
-@require_permission('inventory_permission_edit')
+@require_permission('inventory_access_edit')
 @require_POST
 def upload_inventory_excel(request):
     """Upload inventory items from Excel file"""
@@ -1494,7 +1471,7 @@ def update_project_amount(request, project_id):
         }, status=500)
 
 @login_required
-@require_permission('inventory_permission_edit')
+@require_permission('inventory_access_edit')
 @require_POST
 def delete_inventory_item(request, item_id):
     """
@@ -1814,41 +1791,12 @@ def toggle_task(request, task_id):
 
 
 
-@login_required
-@require_POST
-@require_permission('inventory_permission_edit')
-def add_inventory_item(request):
-    """Add a new inventory item"""
-    try:
-        item_name = request.POST.get('item_name', '').strip()
-        unit_selling_price = request.POST.get('unit_selling_price', '').strip()
-        available_quantity = request.POST.get('available_quantity', '0')
-        quantity_to_be_ordered = request.POST.get('quantity_to_be_ordered', '0')
-        
-        if not item_name or not unit_selling_price:
-            messages.error(request, 'Item name and price are required!')
-            return redirect('inventory')
-        
-        item = InventoryItem.objects.create(
-            item_name=item_name,
-            unit_selling_price=unit_selling_price,
-            available_quantity=int(available_quantity),
-            quantity_to_be_ordered=int(quantity_to_be_ordered)
-        )
-        
-        messages.success(request, f'Item "{item_name}" added successfully!')
-        return redirect('inventory')
-        
-    except Exception as e:
-        messages.error(request, f'Error adding item: {str(e)}')
-        return redirect('inventory')
-
 
 # Replace or add these functions in your lms/views.py
 
 @login_required
 @require_POST
-@require_permission('inventory_permission_edit')
+@require_permission('inventory_access_edit')
 def add_inventory_item(request):
     """Add a new inventory item"""
     try:
@@ -1888,7 +1836,7 @@ def add_inventory_item(request):
 
 @login_required
 @require_POST
-@require_permission('inventory_permission_edit')
+@require_permission('inventory_access_edit')
 def update_inventory_item(request, item_id):
     """Update inventory item details"""
     try:
