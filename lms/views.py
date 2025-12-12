@@ -1304,7 +1304,7 @@ def dashboard(request):
 
     # === REVENUE & KPIs (FIXED) ===
     # Calculate total revenue from ALL projects with amount > 0
-    projects_with_amount = projects.exclude(amount__isnull=True).exclude(amount=0)
+    projects_with_amount = projects.filter(status='advanced').exclude(amount__isnull=True).exclude(amount=0)    
     total_revenue = projects_with_amount.aggregate(total=Sum('amount'))['total'] or 0
     
     # Count won projects for win rate
