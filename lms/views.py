@@ -27,12 +27,44 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.shortcuts import redirect
 from .models import InventoryItem
+from functools import wraps
+
 def has_group(user, group_name):
     """Check if a user belongs to a specific group."""
     return user.is_authenticated and user.groups.filter(name=group_name).exists()
 
+def require_permission(*group_names):
+    """
+    Custom decorator that checks if user has any of the specified groups or is admin/superuser.
+    Redirects to dashboard with error message if permission denied (instead of login page).
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            # Check if user is authenticated first
+            if not request.user.is_authenticated:
+                return redirect('login')
+            
+            # Check if user is superuser or admin
+            if request.user.is_superuser or request.user.groups.filter(name='admin').exists():
+                return view_func(request, *args, **kwargs)
+            
+            # Check for any of the required groups
+            for group_name in group_names:
+                if request.user.groups.filter(name=group_name).exists():
+                    return view_func(request, *args, **kwargs)
+            
+            # Permission denied - redirect to dashboard or referer with error message
+            messages.error(request, 'You do not have permission to access this page.')
+            referer = request.META.get('HTTP_REFERER')
+            if referer:
+                return HttpResponseRedirect(referer)
+            return redirect('dashboard')
+        return wrapper
+    return decorator
+
 @login_required
-@user_passes_test(lambda u: has_group(u, 'admin') or u.is_superuser)
+@require_permission('admin')
 def access_control(request):
     """Admin page to view and assign groups to users."""
     users = User.objects.exclude(is_superuser=True).select_related()
@@ -41,7 +73,7 @@ def access_control(request):
 
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'admin') or u.is_superuser)
+@require_permission('admin')
 def update_user_groups(request):
     """Handle AJAX updates for assigning/removing groups."""
     if request.method == 'POST':
@@ -190,7 +222,7 @@ def logout_view(request):
 # ============================================================================
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'leads_access') or has_group(u, 'admin'))
+@require_permission('leads_access')
 def leads_list(request):
     """Display list of all leads with search and filter capabilities"""
 
@@ -521,8 +553,7 @@ def create_boq(request, project_id):
     return redirect("view_boq", boq_id=boq.id)
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'project_permission_edit') or has_group(u, 'admin'))
-
+@require_permission('project_permission_edit')
 def edit_project(request, project_id):
     """Edit an existing project"""
     try:
@@ -542,6 +573,7 @@ def edit_project(request, project_id):
             status = request.POST.get('status', 'open')
             remarks = request.POST.get('remarks', '').strip()
             lead_source_id = request.POST.get('lead_source_id', '').strip()
+            city = request.POST.get('city', '').strip()
 
             # Validation
             if not project_name or not lead_source_id:
@@ -557,6 +589,7 @@ def edit_project(request, project_id):
             project.status = status
             project.lead_source = lead_source
             project.remarks = remarks
+            project.city = city
             project.save()
 
             messages.success(request, f'Project "{project_name}" updated successfully!')
@@ -1033,7 +1066,7 @@ def delete_boq(request, boq_id):
 
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'inventory_access_view') or has_group(u, 'admin'))
+@require_permission('inventory_access_view')
 def inventory(request):
     """Display inventory items with enhanced tracking - FIXED VERSION"""
     items = InventoryItem.objects.all().order_by('item_name')
@@ -1069,7 +1102,7 @@ def inventory(request):
 # Place it near your other inventory-related functions
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_permission('inventory_permission_edit')
 @require_POST
 def upload_inventory_excel(request):
     """Upload inventory items from Excel file"""
@@ -1225,7 +1258,7 @@ from django.conf import settings
 
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
+@require_permission('basic_access')
 def dashboard(request):
     """Dynamic and filterable dashboard with inventory and city-wise sales"""
     user = request.user
@@ -1461,7 +1494,7 @@ def update_project_amount(request, project_id):
         }, status=500)
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_permission('inventory_permission_edit')
 @require_POST
 def delete_inventory_item(request, item_id):
     """
@@ -1490,7 +1523,7 @@ def delete_inventory_item(request, item_id):
 # ============================================================================
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'ongoing_projects_access') or has_group(u, 'admin'))
+@require_permission('ongoing_projects_access')
 def ongoing_projects(request):
     projects = Project.objects.exclude(status__in=['open', 'contacted','won','In Progress']).select_related('lead_source').order_by('-id')
     return render(request, 'lms/ongoing_projects.html', {'projects': projects})
@@ -1557,7 +1590,7 @@ def update_invoice_number(request, boq_id):
 
 @login_required
 @require_POST
-@user_passes_test(lambda u: has_group(u, 'project_permission_edit') or has_group(u, 'admin'))
+@require_permission('project_permission_edit')
 def add_project(request):
     """Add a new project"""
     try:
@@ -1602,7 +1635,7 @@ def add_project(request):
 # ============================================================================
 
 @login_required
-@user_passes_test(lambda u: has_group(u, 'basic_access') or has_group(u, 'admin'))
+@require_permission('basic_access')
 def tasks(request):
     user = request.user
     # Build two views: Assigned to Me and Assigned by Me
@@ -1664,7 +1697,7 @@ def tasks(request):
 
 @login_required
 @require_POST
-@user_passes_test(lambda u: has_group(u, 'task_permission_edit') or has_group(u, 'admin'))
+@require_permission('task_permission_edit')
 def add_task(request):
     print(request)
     """Add a new task"""
@@ -1711,7 +1744,8 @@ from django.contrib.auth.decorators import user_passes_test
 def is_admin_or_superuser(user):
     return user.is_superuser or user.groups.filter(name='admin').exists()
 
-@user_passes_test(is_admin_or_superuser)
+@login_required
+@require_permission('admin')
 def edit_task(request, task_id):
     task = get_object_or_404(Task, id=task_id)
     if request.method == 'POST':
@@ -1724,8 +1758,8 @@ def edit_task(request, task_id):
         return redirect('tasks')
     return render(request, 'lms/edit_task.html', {'task': task})
 
-@user_passes_test(is_admin_or_superuser)
-@user_passes_test(lambda u: has_group(u, 'task_permission_edit') or has_group(u, 'admin'))
+@login_required
+@require_permission('task_permission_edit')
 def delete_task(request, task_id):
     print('check')
     task = get_object_or_404(Task, id=task_id)
@@ -1782,7 +1816,7 @@ def toggle_task(request, task_id):
 
 @login_required
 @require_POST
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_permission('inventory_permission_edit')
 def add_inventory_item(request):
     """Add a new inventory item"""
     try:
@@ -1814,7 +1848,7 @@ def add_inventory_item(request):
 
 @login_required
 @require_POST
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_permission('inventory_permission_edit')
 def add_inventory_item(request):
     """Add a new inventory item"""
     try:
@@ -1854,7 +1888,7 @@ def add_inventory_item(request):
 
 @login_required
 @require_POST
-@user_passes_test(lambda u: has_group(u, 'inventory_permission_edit') or has_group(u, 'admin'))
+@require_permission('inventory_permission_edit')
 def update_inventory_item(request, item_id):
     """Update inventory item details"""
     try:
