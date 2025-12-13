@@ -143,7 +143,7 @@ def update_project_status(request, project_id):
                 }, status=403)
         
         # Validate status
-        valid_statuses = ['open', 'contacted', 'boq', 'advanced', 'In Progress', 'won', 'closed', 'lost']
+        valid_statuses = ['open', 'contacted', 'boq', 'advance', 'In Progress', 'won', 'closed', 'lost']
         if new_status not in valid_statuses:
             return JsonResponse({
                 'success': False,
@@ -328,7 +328,7 @@ def update_lead_status(request):
         lead = get_object_or_404(LeadSource, id=lead_id)
         
         # Validate status
-        valid_statuses = ['open', 'contacted', 'boq', 'advanced', 'won', 'closed', 'lost']
+        valid_statuses = ['open', 'contacted', 'boq', 'advance', 'won', 'closed', 'lost']
         if new_status not in valid_statuses:
             return JsonResponse({
                 'success': False,
@@ -338,8 +338,8 @@ def update_lead_status(request):
         lead.status = new_status
         lead.save()
         
-        # Auto-create project when status becomes "advanced"
-        if new_status == 'advanced' and not lead.has_project:
+        # Auto-create project when status becomes "advance"
+        if new_status == 'advance' and not lead.has_project:
             project_name = f"{lead.first_name} {lead.last_name} "
             Project.objects.create(
                 project_name=project_name,
@@ -402,9 +402,141 @@ def delete_lead(request, lead_id):
 
 
 # ============================================================================
+# LEAD SOURCES MANAGEMENT VIEW
+# ============================================================================
+
+@login_required
+@require_permission('leads_access')
+def lead_sources(request):
+    """Display and manage all lead sources (customers/contacts)"""
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            # Add new lead source
+            try:
+                first_name = request.POST.get('first_name', '').strip()
+                last_name = request.POST.get('last_name', '').strip()
+                country_code = request.POST.get('country_code', '+91').strip()
+                phone_number = request.POST.get('phone_number', '').strip()
+                address = request.POST.get('address', '').strip()
+                remarks = request.POST.get('remarks', '').strip()
+                
+                # Validation
+                if not first_name or not phone_number:
+                    messages.error(request, 'First name and phone number are required!')
+                    return redirect('lead_sources')
+                
+                if len(phone_number) != 10 or not phone_number.isdigit():
+                    messages.error(request, 'Phone number must be exactly 10 digits!')
+                    return redirect('lead_sources')
+                
+                # Check for duplicate
+                if LeadSource.objects.filter(country_code=country_code, phone_number=phone_number).exists():
+                    messages.error(request, 'A lead source with this phone number already exists!')
+                    return redirect('lead_sources')
+                
+                LeadSource.objects.create(
+                    first_name=first_name,
+                    last_name=last_name,
+                    country_code=country_code,
+                    phone_number=phone_number,
+                    address=address,
+                    remarks=remarks,
+                    user=request.user
+                )
+                
+                messages.success(request, f'Lead source "{first_name} {last_name}" added successfully!')
+                return redirect('lead_sources')
+                
+            except Exception as e:
+                messages.error(request, f'Error adding lead source: {str(e)}')
+                return redirect('lead_sources')
+        
+        elif action == 'edit':
+            # Edit existing lead source
+            try:
+                source_id = request.POST.get('source_id')
+                source = get_object_or_404(LeadSource, id=source_id)
+                
+                first_name = request.POST.get('first_name', '').strip()
+                last_name = request.POST.get('last_name', '').strip()
+                country_code = request.POST.get('country_code', '+91').strip()
+                phone_number = request.POST.get('phone_number', '').strip()
+                address = request.POST.get('address', '').strip()
+                remarks = request.POST.get('remarks', '').strip()
+                
+                # Validation
+                if not first_name or not phone_number:
+                    messages.error(request, 'First name and phone number are required!')
+                    return redirect('lead_sources')
+                
+                if len(phone_number) != 10 or not phone_number.isdigit():
+                    messages.error(request, 'Phone number must be exactly 10 digits!')
+                    return redirect('lead_sources')
+                
+                # Check for duplicate (excluding current source)
+                if LeadSource.objects.filter(
+                    country_code=country_code, 
+                    phone_number=phone_number
+                ).exclude(id=source_id).exists():
+                    messages.error(request, 'Another lead source with this phone number already exists!')
+                    return redirect('lead_sources')
+                
+                source.first_name = first_name
+                source.last_name = last_name
+                source.country_code = country_code
+                source.phone_number = phone_number
+                source.address = address
+                source.remarks = remarks
+                source.save()
+                
+                messages.success(request, f'Lead source "{first_name} {last_name}" updated successfully!')
+                return redirect('lead_sources')
+                
+            except Exception as e:
+                messages.error(request, f'Error updating lead source: {str(e)}')
+                return redirect('lead_sources')
+        
+        elif action == 'delete':
+            # Delete lead source
+            try:
+                source_id = request.POST.get('source_id')
+                source = get_object_or_404(LeadSource, id=source_id)
+                
+                # Check if this lead source has projects
+                if source.has_project:
+                    messages.error(request, 'Cannot delete lead source with associated projects!')
+                    return redirect('lead_sources')
+                
+                source_name = f"{source.first_name} {source.last_name}"
+                source.delete()
+                
+                messages.success(request, f'Lead source "{source_name}" deleted successfully!')
+                return redirect('lead_sources')
+                
+            except Exception as e:
+                messages.error(request, f'Error deleting lead source: {str(e)}')
+                return redirect('lead_sources')
+    
+    # GET request - display all lead sources
+    lead_sources_list = LeadSource.objects.all().order_by('-snapshot_d')
+    with_projects_count = LeadSource.objects.filter(has_project=True).count()
+    without_projects_count = LeadSource.objects.filter(has_project=False).count()
+    
+    context = {
+        'lead_sources': lead_sources_list,
+        'with_projects_count': with_projects_count,
+        'without_projects_count': without_projects_count,
+    }
+    
+    return render(request, 'lms/lead_sources.html', context)
+
+
+# ============================================================================
 # DASHBOARD VIEW
 # ============================================================================
-# Add these imports at the top of views.py
 from django.http import HttpResponse
 from django.template.loader import get_template
 from io import BytesIO
@@ -1224,7 +1356,7 @@ def api_leads_summary(request):
         'open': leads.filter(status='open').count(),
         'contacted': leads.filter(status='contacted').count(),
         'boq': leads.filter(status='boq').count(),
-        'advanced': leads.filter(status='advanced').count(),
+        'advance': leads.filter(status='advance').count(),
         'won': leads.filter(status='won').count(),
         'closed': leads.filter(status='closed').count(),
         'lost': leads.filter(status='lost').count(),
@@ -1271,7 +1403,7 @@ def dashboard(request):
         'open': 'New',
         'contacted': 'Contacted',
         'boq': 'BOQ',
-        'advanced': 'Advanced',
+        'advance': 'Advance',
         'In Progress': 'In Progress',
         'Testing': 'Testing',
         'won': 'Won',
@@ -1304,7 +1436,7 @@ def dashboard(request):
 
     # === REVENUE & KPIs (FIXED) ===
     # Calculate total revenue from ALL projects with amount > 0
-    projects_with_amount = projects.filter(status='advanced').exclude(amount__isnull=True).exclude(amount=0)    
+    projects_with_amount = projects.filter(status='advance').exclude(amount__isnull=True).exclude(amount=0)    
     total_revenue = projects_with_amount.aggregate(total=Sum('amount'))['total'] or 0
     
     # Count won projects for win rate
@@ -1502,7 +1634,8 @@ def delete_inventory_item(request, item_id):
 @login_required
 @require_permission('ongoing_projects_access')
 def ongoing_projects(request):
-    projects = Project.objects.exclude(status__in=['open', 'contacted','won','In Progress']).select_related('lead_source').order_by('-id')
+    # Only show projects with 'advance' status
+    projects = Project.objects.filter(status='advance').select_related('lead_source').order_by('-id')
     return render(request, 'lms/ongoing_projects.html', {'projects': projects})
 
 
@@ -1944,7 +2077,7 @@ def api_leads_summary(request):
         'open': LeadSource.objects.filter(status='open').count(),
         'contacted': LeadSource.objects.filter(status='contacted').count(),
         'boq': LeadSource.objects.filter(status='boq').count(),
-        'advanced': LeadSource.objects.filter(status='advanced').count(),
+        'advance': LeadSource.objects.filter(status='advance').count(),
         'won': LeadSource.objects.filter(status='won').count(),
         'closed': LeadSource.objects.filter(status='closed').count(),
         'lost': LeadSource.objects.filter(status='lost').count(),
@@ -1957,7 +2090,7 @@ def api_projects_summary(request):
     """API endpoint for projects summary statistics"""
     summary = {
         'total': Project.objects.count(),
-        'active': Project.objects.filter(status__in=['open', 'contacted', 'boq', 'advanced']).count(),
+        'active': Project.objects.filter(status__in=['open', 'contacted', 'boq', 'advance']).count(),
         'won': Project.objects.filter(status='won').count(),
         'lost': Project.objects.filter(status='lost').count(),
     }

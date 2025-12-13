@@ -9,7 +9,7 @@ class LeadSource(models.Model):
         ('open', 'Open'),
         ('contacted', 'Contacted'),
         ('boq', 'BOQ'),
-        ('advanced', 'Advanced'),
+        ('advance', 'Advance'),
         ('won', 'Won'),
         ('lost', 'Lost'),
     ]

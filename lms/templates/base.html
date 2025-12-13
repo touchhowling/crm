@@ -274,6 +274,12 @@
           <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Inventory
         </a>
 
+        <a href="{% url 'lead_sources' %}" 
+           class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
+                  {% if '/lead-sources/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">
+          <i class="fa-solid fa-address-book w-5 text-center"></i> Lead Sources
+        </a>
+
         <a href="{% url 'access_control' %}" 
            class="nav-btn flex items-center gap-3 px-3 py-2 rounded-lg text-left w-full 
                   {% if '/accesscontrol/' in request.path %} bg-blue-50 text-blue-600 font-medium {% else %} text-gray-700 hover:bg-blue-50 {% endif %}">

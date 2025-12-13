@@ -16,7 +16,8 @@
       <h1 class="text-3xl font-bold mb-2">{{ project.project_name }}</h1>
       <p class="text-gray-600">{{ lead.country_code }}{{ lead.phone_number }}</p>
     </div>
-    <button id="createBOQBtn" class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2">
+    <button id="createBOQBtn"
+      class="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 flex items-center gap-2">
       <i class="fa-solid fa-file-invoice"></i>
       Create BOQ
     </button>
@@ -57,7 +58,7 @@
             <span class="px-3 py-1 text-sm font-medium rounded-full 
               {% if project.status == 'won' %}bg-green-100 text-green-700
               {% elif project.status == 'boq' %}bg-purple-100 text-purple-700
-              {% elif project.status == 'advanced' %}bg-yellow-100 text-yellow-700
+              {% elif project.status == 'advance' %}bg-yellow-100 text-yellow-700
               {% else %}bg-blue-100 text-blue-700{% endif %}">
               {{ project.status }}
             </span>
@@ -87,64 +88,67 @@
         Bill of Quantities (BOQ)
       </h2>
     </div>
-    
+
     <div id="boqList" class="p-6">
       {% if boqs %}
-        <div class="space-y-4">
-          {% for boq in boqs %}
-            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div class="flex justify-between items-start mb-3">
-                <div>
-                  <h3 class="font-semibold text-lg">{{ boq.invoice_number }}</h3>
-                  <p class="text-sm text-gray-500">Created on {{ boq.created_at|date:"M d, Y" }}</p>
-                </div>
-                <span class="px-3 py-1 text-xs font-medium rounded-full
+      <div class="space-y-4">
+        {% for boq in boqs %}
+        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 class="font-semibold text-lg">{{ boq.invoice_number }}</h3>
+              <p class="text-sm text-gray-500">Created on {{ boq.created_at|date:"M d, Y" }}</p>
+            </div>
+            <span class="px-3 py-1 text-xs font-medium rounded-full
                   {% if boq.status == 'approved' %}bg-green-100 text-green-700
                   {% elif boq.status == 'sent' %}bg-blue-100 text-blue-700
                   {% elif boq.status == 'rejected' %}bg-red-100 text-red-700
                   {% else %}bg-gray-100 text-gray-700{% endif %}">
-                  {{ boq.get_status_display }}
-                </span>
-              </div>
-              
-              <div class="grid grid-cols-4 gap-4 mb-3 text-sm">
-                <div>
-                  <span class="text-gray-500">Subtotal</span>
-                  <p class="font-semibold">₹{{ boq.subtotal|floatformat:2 }}</p>
-                </div>
-                <div>
-                  <span class="text-gray-500">Discount</span>
-                  <p class="font-semibold text-red-600">-₹{{ boq.total_discount|floatformat:2 }}</p>
-                </div>
-                <div>
-                  <span class="text-gray-500">Tax ({{ boq.tax_rate }}%)</span>
-                  <p class="font-semibold">₹{{ boq.total_tax|floatformat:2 }}</p>
-                </div>
-                <div>
-                  <span class="text-gray-500">Grand Total</span>
-                  <p class="font-bold text-lg text-blue-600">₹{{ boq.grand_total|floatformat:2 }}</p>
-                </div>
-              </div>
-              
-              <div class="flex gap-2">
-                <a href="{% url 'view_boq' boq.id %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2">
-                  <i class="fa-solid fa-eye"></i> View
-                </a>
-                <a href="{% url 'download_boq_pdf' boq.id %}" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
-                  <i class="fa-solid fa-download"></i> Download PDF
-                </a>
-              </div>
+              {{ boq.get_status_display }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-4 gap-4 mb-3 text-sm">
+            <div>
+              <span class="text-gray-500">Subtotal</span>
+              <p class="font-semibold">₹{{ boq.subtotal|floatformat:2 }}</p>
             </div>
-          {% endfor %}
+            <div>
+              <span class="text-gray-500">Discount</span>
+              <p class="font-semibold text-red-600">-₹{{ boq.total_discount|floatformat:2 }}</p>
+            </div>
+            <div>
+              <span class="text-gray-500">Tax ({{ boq.tax_rate }}%)</span>
+              <p class="font-semibold">₹{{ boq.total_tax|floatformat:2 }}</p>
+            </div>
+            <div>
+              <span class="text-gray-500">Grand Total</span>
+              <p class="font-bold text-lg text-blue-600">₹{{ boq.grand_total|floatformat:2 }}</p>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <a href="{% url 'view_boq' boq.id %}"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex items-center gap-2">
+              <i class="fa-solid fa-eye"></i> View
+            </a>
+            <a href="{% url 'download_boq_pdf' boq.id %}" target="_blank"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
+              <i class="fa-solid fa-download"></i> Download PDF
+            </a>
+          </div>
         </div>
+        {% endfor %}
+      </div>
       {% else %}
-        <div class="text-center py-12">
-          <i class="fa-solid fa-file-invoice text-6xl text-gray-300 mb-4"></i>
-          <p class="text-gray-500">No BOQs created yet</p>
-          <button onclick="document.getElementById('createBOQBtn').click()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Create First BOQ
-          </button>
-        </div>
+      <div class="text-center py-12">
+        <i class="fa-solid fa-file-invoice text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">No BOQs created yet</p>
+        <button onclick="document.getElementById('createBOQBtn').click()"
+          class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          Create First BOQ
+        </button>
+      </div>
       {% endif %}
     </div>
   </div>
@@ -177,7 +181,8 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Overall Discount (%)</label>
-              <input type="number" name="overall_discount_percentage" id="overallDiscountPercentage" step="0.01" min="0" max="100" value="0" 
+              <input type="number" name="overall_discount_percentage" id="overallDiscountPercentage" step="0.01" min="0"
+                max="100" value="0"
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
               <p class="text-xs text-gray-500 mt-1">Applied on total after item discounts</p>
             </div>
@@ -188,7 +193,8 @@
         <div class="mb-6">
           <div class="flex justify-between items-center mb-3">
             <h3 class="font-semibold">Items</h3>
-            <button type="button" id="addItemBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
+            <button type="button" id="addItemBtn"
+              class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center gap-2">
               <i class="fa-solid fa-plus"></i> Add Item
             </button>
           </div>
@@ -242,15 +248,19 @@
         <!-- Notes -->
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-700 mb-2">Notes / Terms & Conditions</label>
-          <textarea name="notes" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Add any additional notes, payment terms, or special conditions"></textarea>
+          <textarea name="notes" rows="3"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            placeholder="Add any additional notes, payment terms, or special conditions"></textarea>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex gap-3">
-          <button type="button" id="cancelBOQBtn" class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+          <button type="button" id="cancelBOQBtn"
+            class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
             Cancel
           </button>
-          <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+          <button type="submit"
+            class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
             Save BOQ
           </button>
         </div>
@@ -263,25 +273,33 @@
 <template id="itemRowTemplate">
   <tr class="item-row border-b">
     <td class="px-3 py-2 border">
-      <input type="number" name="sr_no[]" class="sr-no w-full px-2 py-1 border rounded text-center bg-gray-100" readonly>
+      <input type="number" name="sr_no[]" class="sr-no w-full px-2 py-1 border rounded text-center bg-gray-100"
+        readonly>
     </td>
     <td class="px-3 py-2 border">
-      <input type="text" name="item_name_display[]" class="item-search w-full px-2 py-1 border rounded" placeholder="Start typing..." autocomplete="off" required>
+      <input type="text" name="item_name_display[]" class="item-search w-full px-2 py-1 border rounded"
+        placeholder="Start typing..." autocomplete="off" required>
       <input type="hidden" name="inventory_id[]" class="inventory-id">
-      <div class="suggestions-dropdown absolute bg-white border border-gray-300 rounded shadow-lg mt-1 hidden z-50 max-h-48 overflow-y-auto"></div>
+      <div
+        class="suggestions-dropdown absolute bg-white border border-gray-300 rounded shadow-lg mt-1 hidden z-50 max-h-48 overflow-y-auto">
+      </div>
       <div class="stock-warning text-xs text-red-600 mt-1 hidden"></div>
     </td>
     <td class="px-3 py-2 border">
-      <input type="number" name="unit_price[]" class="unit-price w-full px-2 py-1 border rounded bg-gray-100" step="0.01" readonly>
+      <input type="number" name="unit_price[]" class="unit-price w-full px-2 py-1 border rounded bg-gray-100"
+        step="0.01" readonly>
     </td>
     <td class="px-3 py-2 border">
-      <input type="number" name="quantity[]" class="quantity w-full px-2 py-1 border rounded" min="1" value="1" required>
+      <input type="number" name="quantity[]" class="quantity w-full px-2 py-1 border rounded" min="1" value="1"
+        required>
     </td>
     <td class="px-3 py-2 border">
-      <input type="number" name="discount[]" class="discount w-full px-2 py-1 border rounded" step="0.01" min="0" max="100" value="0">
+      <input type="number" name="discount[]" class="discount w-full px-2 py-1 border rounded" step="0.01" min="0"
+        max="100" value="0">
     </td>
     <td class="px-3 py-2 border">
-      <input type="text" class="line-total w-full px-2 py-1 border rounded bg-gray-100 font-semibold" readonly value="₹0.00">
+      <input type="text" class="line-total w-full px-2 py-1 border rounded bg-gray-100 font-semibold" readonly
+        value="₹0.00">
     </td>
     <td class="px-3 py-2 text-center border">
       <button type="button" class="remove-item text-red-600 hover:text-red-800 text-xl">
@@ -292,280 +310,280 @@
 </template>
 
 <script>
-// Inventory data from backend
-const inventoryData = {
+  // Inventory data from backend
+  const inventoryData = {
   {% for item in inventory_items %}
-  {{ item.id }}: {
-    id: {{ item.id }},
+  { { item.id } }: {
+    id: { { item.id } },
     name: "{{ item.item_name|escapejs }}",
-    price: {{ item.unit_selling_price }},
-    availableQty: {{ item.available_quantity }}
-  }{% if not forloop.last %},{% endif %}
+      price: { { item.unit_selling_price } },
+    availableQty: { { item.available_quantity } }
+  } {% if not forloop.last %}, {% endif %}
   {% endfor %}
 };
 
-let itemCounter = 0;
+  let itemCounter = 0;
 
-// Modal controls
-document.getElementById('createBOQBtn').addEventListener('click', () => {
-  document.getElementById('boqModal').classList.add('show');
-  document.body.style.overflow = 'hidden';
-  addNewItem(); // Add first row automatically
-});
+  // Modal controls
+  document.getElementById('createBOQBtn').addEventListener('click', () => {
+    document.getElementById('boqModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+    addNewItem(); // Add first row automatically
+  });
 
-document.getElementById('closeBOQModal').addEventListener('click', closeBOQModal);
-document.getElementById('cancelBOQBtn').addEventListener('click', closeBOQModal);
+  document.getElementById('closeBOQModal').addEventListener('click', closeBOQModal);
+  document.getElementById('cancelBOQBtn').addEventListener('click', closeBOQModal);
 
-function closeBOQModal() {
-  document.getElementById('boqModal').classList.remove('show');
-  document.body.style.overflow = 'auto';
-  document.getElementById('boqForm').reset();
-  document.getElementById('itemsTableBody').innerHTML = '';
-  itemCounter = 0;
-}
+  function closeBOQModal() {
+    document.getElementById('boqModal').classList.remove('show');
+    document.body.style.overflow = 'auto';
+    document.getElementById('boqForm').reset();
+    document.getElementById('itemsTableBody').innerHTML = '';
+    itemCounter = 0;
+  }
 
-// Add new item row
-document.getElementById('addItemBtn').addEventListener('click', addNewItem);
+  // Add new item row
+  document.getElementById('addItemBtn').addEventListener('click', addNewItem);
 
-function addNewItem() {
-  const template = document.getElementById('itemRowTemplate');
-  const clone = template.content.cloneNode(true);
-  const row = clone.querySelector('.item-row');
-  
-  itemCounter++;
-  row.querySelector('.sr-no').value = itemCounter;
-  
-  document.getElementById('itemsTableBody').appendChild(clone);
-  attachItemRowListeners(row);
-}
+  function addNewItem() {
+    const template = document.getElementById('itemRowTemplate');
+    const clone = template.content.cloneNode(true);
+    const row = clone.querySelector('.item-row');
 
-function attachItemRowListeners(row) {
-  const itemSearch = row.querySelector('.item-search');
-  const suggestionsDropdown = row.querySelector('.suggestions-dropdown');
-  const quantity = row.querySelector('.quantity');
-  const discount = row.querySelector('.discount');
-  const removeBtn = row.querySelector('.remove-item');
-  
-  // Autocomplete search
-  itemSearch.addEventListener('input', function() {
-    const query = this.value.toLowerCase().trim();
-    
-    if (query.length < 2) {
-      suggestionsDropdown.classList.add('hidden');
-      return;
-    }
-    
-    // Filter inventory
-    const matches = Object.values(inventoryData).filter(item => 
-      item.name.toLowerCase().includes(query)
-    ).slice(0, 10);
-    
-    if (matches.length > 0) {
-      suggestionsDropdown.innerHTML = matches.map(item => `
+    itemCounter++;
+    row.querySelector('.sr-no').value = itemCounter;
+
+    document.getElementById('itemsTableBody').appendChild(clone);
+    attachItemRowListeners(row);
+  }
+
+  function attachItemRowListeners(row) {
+    const itemSearch = row.querySelector('.item-search');
+    const suggestionsDropdown = row.querySelector('.suggestions-dropdown');
+    const quantity = row.querySelector('.quantity');
+    const discount = row.querySelector('.discount');
+    const removeBtn = row.querySelector('.remove-item');
+
+    // Autocomplete search
+    itemSearch.addEventListener('input', function () {
+      const query = this.value.toLowerCase().trim();
+
+      if (query.length < 2) {
+        suggestionsDropdown.classList.add('hidden');
+        return;
+      }
+
+      // Filter inventory
+      const matches = Object.values(inventoryData).filter(item =>
+        item.name.toLowerCase().includes(query)
+      ).slice(0, 10);
+
+      if (matches.length > 0) {
+        suggestionsDropdown.innerHTML = matches.map(item => `
         <div class="suggestion-item px-4 py-2 hover:bg-blue-50 cursor-pointer flex justify-between" data-item-id="${item.id}">
           <span>${item.name}</span>
           <span class="text-xs text-gray-500">₹${item.price.toFixed(2)} | Stock: ${item.availableQty}</span>
         </div>
       `).join('');
-      suggestionsDropdown.classList.remove('hidden');
-      
-      // Attach click events
-      suggestionsDropdown.querySelectorAll('.suggestion-item').forEach(suggestionEl => {
-        suggestionEl.addEventListener('click', function() {
-          const itemId = this.dataset.itemId;
-          selectInventoryItem(row, itemId);
-          suggestionsDropdown.classList.add('hidden');
+        suggestionsDropdown.classList.remove('hidden');
+
+        // Attach click events
+        suggestionsDropdown.querySelectorAll('.suggestion-item').forEach(suggestionEl => {
+          suggestionEl.addEventListener('click', function () {
+            const itemId = this.dataset.itemId;
+            selectInventoryItem(row, itemId);
+            suggestionsDropdown.classList.add('hidden');
+          });
         });
-      });
-    } else {
-      suggestionsDropdown.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No items found</div>';
-      suggestionsDropdown.classList.remove('hidden');
-    }
-  });
-  
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!row.contains(e.target)) {
-      suggestionsDropdown.classList.add('hidden');
-    }
-  });
-  
-  quantity.addEventListener('input', () => {
-    checkStockAndCalculate(row);
-  });
-  
-  discount.addEventListener('input', () => calculateRowTotal(row));
-  
-  removeBtn.addEventListener('click', () => {
-    row.remove();
-    renumberRows();
-    calculateTotals();
-  });
-}
+      } else {
+        suggestionsDropdown.innerHTML = '<div class="px-4 py-2 text-gray-500 text-sm">No items found</div>';
+        suggestionsDropdown.classList.remove('hidden');
+      }
+    });
 
-function selectInventoryItem(row, itemId) {
-  const item = inventoryData[itemId];
-  if (!item) return;
-  
-  row.querySelector('.item-search').value = item.name;
-  row.querySelector('.inventory-id').value = item.id;
-  row.querySelector('.unit-price').value = item.price.toFixed(2);
-  
-  checkStockAndCalculate(row);
-}
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!row.contains(e.target)) {
+        suggestionsDropdown.classList.add('hidden');
+      }
+    });
 
-function checkStockAndCalculate(row) {
-  const inventoryId = row.querySelector('.inventory-id').value;
-  if (!inventoryId) return;
-  
-  const item = inventoryData[inventoryId];
-  const requestedQty = parseInt(row.querySelector('.quantity').value) || 0;
-  const warning = row.querySelector('.stock-warning');
-  
-  if (requestedQty > item.availableQty) {
-    warning.textContent = `⚠️ Only ${item.availableQty} units available. Shortage: ${requestedQty - item.availableQty} units`;
-    warning.classList.remove('hidden');
-    row.classList.add('bg-red-50');
-  } else {
-    warning.classList.add('hidden');
-    row.classList.remove('bg-red-50');
+    quantity.addEventListener('input', () => {
+      checkStockAndCalculate(row);
+    });
+
+    discount.addEventListener('input', () => calculateRowTotal(row));
+
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+      renumberRows();
+      calculateTotals();
+    });
   }
-  
-  calculateRowTotal(row);
-}
 
-function calculateRowTotal(row) {
-  const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-  const quantity = parseInt(row.querySelector('.quantity').value) || 0;
-  const discountPercent = parseFloat(row.querySelector('.discount').value) || 0;
-  
-  const gross = unitPrice * quantity;
-  const discountAmount = (gross * discountPercent) / 100;
-  const lineTotal = gross - discountAmount;
-  
-  row.querySelector('.line-total').value = '₹' + lineTotal.toFixed(2);
-  
-  calculateTotals();
-}
+  function selectInventoryItem(row, itemId) {
+    const item = inventoryData[itemId];
+    if (!item) return;
 
-function renumberRows() {
-  const rows = document.querySelectorAll('.item-row');
-  rows.forEach((row, index) => {
-    row.querySelector('.sr-no').value = index + 1;
-  });
-  itemCounter = rows.length;
-}
+    row.querySelector('.item-search').value = item.name;
+    row.querySelector('.inventory-id').value = item.id;
+    row.querySelector('.unit-price').value = item.price.toFixed(2);
 
-function calculateTotals() {
-  const rows = document.querySelectorAll('.item-row');
-  let subtotal = 0;
-  let totalItemDiscounts = 0;
-  
-  rows.forEach(row => {
+    checkStockAndCalculate(row);
+  }
+
+  function checkStockAndCalculate(row) {
     const inventoryId = row.querySelector('.inventory-id').value;
     if (!inventoryId) return;
-    
+
+    const item = inventoryData[inventoryId];
+    const requestedQty = parseInt(row.querySelector('.quantity').value) || 0;
+    const warning = row.querySelector('.stock-warning');
+
+    if (requestedQty > item.availableQty) {
+      warning.textContent = `⚠️ Only ${item.availableQty} units available. Shortage: ${requestedQty - item.availableQty} units`;
+      warning.classList.remove('hidden');
+      row.classList.add('bg-red-50');
+    } else {
+      warning.classList.add('hidden');
+      row.classList.remove('bg-red-50');
+    }
+
+    calculateRowTotal(row);
+  }
+
+  function calculateRowTotal(row) {
     const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
     const quantity = parseInt(row.querySelector('.quantity').value) || 0;
     const discountPercent = parseFloat(row.querySelector('.discount').value) || 0;
-    
+
     const gross = unitPrice * quantity;
     const discountAmount = (gross * discountPercent) / 100;
-    
-    subtotal += gross;
-    totalItemDiscounts += discountAmount;
-  });
-  
-  const subtotalAfterItemDiscounts = subtotal - totalItemDiscounts;
-  
-  // Overall discount
-  const overallDiscountPercent = parseFloat(document.getElementById('overallDiscountPercentage').value) || 0;
-  const overallDiscount = (subtotalAfterItemDiscounts * overallDiscountPercent) / 100;
-  
-  const amountAfterAllDiscounts = subtotalAfterItemDiscounts - overallDiscount;
-  
-  // Tax on discounted price
-  const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-  const taxAmount = (amountAfterAllDiscounts * taxRate) / 100;
-  
-  const grandTotal = amountAfterAllDiscounts + taxAmount;
-  
-  // Update displays
-  document.getElementById('subtotalDisplay').textContent = '₹' + subtotal.toFixed(2);
-  document.getElementById('itemDiscountsDisplay').textContent = '-₹' + totalItemDiscounts.toFixed(2);
-  document.getElementById('overallDiscountDisplay').textContent = '-₹' + overallDiscount.toFixed(2);
-  document.getElementById('taxRateDisplay').textContent = taxRate.toFixed(2);
-  document.getElementById('taxDisplay').textContent = '₹' + taxAmount.toFixed(2);
-  document.getElementById('grandTotalDisplay').textContent = '₹' + grandTotal.toFixed(2);
-}
+    const lineTotal = gross - discountAmount;
 
-// Recalculate on tax/discount change
-document.getElementById('taxRate').addEventListener('input', calculateTotals);
-document.getElementById('overallDiscountPercentage').addEventListener('input', calculateTotals);
+    row.querySelector('.line-total').value = '₹' + lineTotal.toFixed(2);
 
-// Form validation before submit
-document.getElementById('boqForm').addEventListener('submit', function(e) {
-  const rows = document.querySelectorAll('.item-row');
-  
-  if (rows.length === 0) {
-    e.preventDefault();
-    alert('Please add at least one item to the BOQ');
-    return false;
+    calculateTotals();
   }
-  
-  let hasEmptyItems = false;
-  rows.forEach(row => {
-    const inventoryId = row.querySelector('.inventory-id').value;
-    if (!inventoryId) {
-      hasEmptyItems = true;
+
+  function renumberRows() {
+    const rows = document.querySelectorAll('.item-row');
+    rows.forEach((row, index) => {
+      row.querySelector('.sr-no').value = index + 1;
+    });
+    itemCounter = rows.length;
+  }
+
+  function calculateTotals() {
+    const rows = document.querySelectorAll('.item-row');
+    let subtotal = 0;
+    let totalItemDiscounts = 0;
+
+    rows.forEach(row => {
+      const inventoryId = row.querySelector('.inventory-id').value;
+      if (!inventoryId) return;
+
+      const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+      const quantity = parseInt(row.querySelector('.quantity').value) || 0;
+      const discountPercent = parseFloat(row.querySelector('.discount').value) || 0;
+
+      const gross = unitPrice * quantity;
+      const discountAmount = (gross * discountPercent) / 100;
+
+      subtotal += gross;
+      totalItemDiscounts += discountAmount;
+    });
+
+    const subtotalAfterItemDiscounts = subtotal - totalItemDiscounts;
+
+    // Overall discount
+    const overallDiscountPercent = parseFloat(document.getElementById('overallDiscountPercentage').value) || 0;
+    const overallDiscount = (subtotalAfterItemDiscounts * overallDiscountPercent) / 100;
+
+    const amountAfterAllDiscounts = subtotalAfterItemDiscounts - overallDiscount;
+
+    // Tax on discounted price
+    const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+    const taxAmount = (amountAfterAllDiscounts * taxRate) / 100;
+
+    const grandTotal = amountAfterAllDiscounts + taxAmount;
+
+    // Update displays
+    document.getElementById('subtotalDisplay').textContent = '₹' + subtotal.toFixed(2);
+    document.getElementById('itemDiscountsDisplay').textContent = '-₹' + totalItemDiscounts.toFixed(2);
+    document.getElementById('overallDiscountDisplay').textContent = '-₹' + overallDiscount.toFixed(2);
+    document.getElementById('taxRateDisplay').textContent = taxRate.toFixed(2);
+    document.getElementById('taxDisplay').textContent = '₹' + taxAmount.toFixed(2);
+    document.getElementById('grandTotalDisplay').textContent = '₹' + grandTotal.toFixed(2);
+  }
+
+  // Recalculate on tax/discount change
+  document.getElementById('taxRate').addEventListener('input', calculateTotals);
+  document.getElementById('overallDiscountPercentage').addEventListener('input', calculateTotals);
+
+  // Form validation before submit
+  document.getElementById('boqForm').addEventListener('submit', function (e) {
+    const rows = document.querySelectorAll('.item-row');
+
+    if (rows.length === 0) {
+      e.preventDefault();
+      alert('Please add at least one item to the BOQ');
+      return false;
     }
+
+    let hasEmptyItems = false;
+    rows.forEach(row => {
+      const inventoryId = row.querySelector('.inventory-id').value;
+      if (!inventoryId) {
+        hasEmptyItems = true;
+      }
+    });
+
+    if (hasEmptyItems) {
+      e.preventDefault();
+      alert('Please select inventory items from the dropdown for all rows');
+      return false;
+    }
+
+    return true;
   });
-  
-  if (hasEmptyItems) {
-    e.preventDefault();
-    alert('Please select inventory items from the dropdown for all rows');
-    return false;
-  }
-  
-  return true;
-});
 </script>
 
 <style>
-.suggestions-dropdown {
-  max-width: 400px;
-  width: 100%;
-}
+  .suggestions-dropdown {
+    max-width: 400px;
+    width: 100%;
+  }
 
-.suggestion-item:last-child {
-  border-bottom: none;
-}
+  .suggestion-item:last-child {
+    border-bottom: none;
+  }
 
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 50;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-}
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 50;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
 
-.modal.show {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.modal-content {
-  background-color: white;
-  border-radius: 1rem;
-  width: 90%;
-  max-width: 1200px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
+  .modal-content {
+    background-color: white;
+    border-radius: 1rem;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
 </style>
 {% endblock %}

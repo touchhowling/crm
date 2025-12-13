@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+
+{% block main %}
+<main class="p-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Lead Sources</h1>
+            <p class="text-gray-500 text-sm">Manage your lead sources (contacts/customers)</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Search lead sources..."
+                    class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
+                <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <button onclick="openAddModal()"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-plus"></i> Add Lead Source
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-users text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Total Lead Sources</p>
+                    <p class="text-xl font-bold text-gray-800">{{ lead_sources|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-check-circle text-green-600"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">With Projects</p>
+                    <p class="text-xl font-bold text-gray-800">{{ with_projects_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-clock text-orange-600"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Without Projects</p>
+                    <p class="text-xl font-bold text-gray-800">{{ without_projects_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full" id="leadSourcesTable">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Phone</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Address</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Remarks</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Has
+                            Project</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Added On</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for source in lead_sources %}
+                    <tr class="hover:bg-gray-50 transition-colors" data-id="{{ source.id }}">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                    {{ source.first_name|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ source.first_name }} {{ source.last_name }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">{{ source.country_code }}{{ source.phone_number }}</td>
+                        <td class="px-6 py-4 text-gray-600 max-w-xs truncate" title="{{ source.address|default:'-' }}">
+                            {{ source.address|default:"-"|truncatewords:5 }}</td>
+                        <td class="px-6 py-4 text-gray-600 max-w-xs truncate" title="{{ source.remarks|default:'-' }}">
+                            {{ source.remarks|default:"-"|truncatewords:5 }}</td>
+                        <td class="px-6 py-4">
+                            {% if source.has_project %}
+                            <span
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                <i class="fa-solid fa-check"></i> Yes
+                            </span>
+                            {% else %}
+                            <span
+                                class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-medium">
+                                <i class="fa-solid fa-minus"></i> No
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-gray-600 text-sm">{{ source.snapshot_d|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-center gap-2">
+                                <button
+                                    class="edit-btn w-8 h-8 bg-blue-50 hover:bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 transition-colors"
+                                    data-id="{{ source.id }}" data-firstname="{{ source.first_name }}"
+                                    data-lastname="{{ source.last_name|default:'' }}"
+                                    data-countrycode="{{ source.country_code }}" data-phone="{{ source.phone_number }}"
+                                    data-address="{{ source.address|default:'' }}"
+                                    data-remarks="{{ source.remarks|default:'' }}" title="Edit">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button
+                                    class="delete-btn w-8 h-8 bg-red-50 hover:bg-red-100 rounded-lg flex items-center justify-center text-red-600 transition-colors"
+                                    data-id="{{ source.id }}"
+                                    data-name="{{ source.first_name }} {{ source.last_name|default:'' }}"
+                                    title="Delete">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <i class="fa-solid fa-address-book text-5xl text-gray-300"></i>
+                                <p class="text-gray-500">No lead sources found</p>
+                                <button onclick="openAddModal()" class="text-blue-600 hover:underline text-sm">Add your
+                                    first lead source</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div id="leadSourceModal" class="modal">
+    <div class="modal-content p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 id="modalTitle" class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-user-plus text-blue-600"></i> Add Lead Source
+            </h2>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="leadSourceForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="sourceId" name="source_id" value="">
+            <input type="hidden" id="formAction" name="action" value="add">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- First Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                    <input type="text" id="firstName" name="first_name" required
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter first name">
+                </div>
+
+                <!-- Last Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                    <input type="text" id="lastName" name="last_name"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter last name">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <!-- Country Code -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Country Code</label>
+                    <input type="text" id="countryCode" name="country_code" value="+91"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="+91">
+                </div>
+
+                <!-- Phone Number -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                    <input type="text" id="phoneNumber" name="phone_number" required maxlength="10"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter 10-digit phone number">
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                <textarea id="address" name="address" rows="2"
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Enter address"></textarea>
+            </div>
+
+            <!-- Remarks -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                <textarea id="remarks" name="remarks" rows="2"
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Enter any remarks"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="closeModal()"
+                    class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="submitBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-save"></i> Save Lead Source
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content p-6 max-w-md">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-trash text-3xl text-red-600"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Delete Lead Source?</h2>
+            <p class="text-gray-500">Are you sure you want to delete <strong id="deleteSourceName"></strong>? This
+                action cannot be undone.</p>
+        </div>
+
+        <form id="deleteForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" id="deleteSourceId" name="source_id" value="">
+            <input type="hidden" name="action" value="delete">
+
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" onclick="closeDeleteModal()"
+                    class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#leadSourcesTable tbody tr');
+
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Modal functions
+    function openAddModal() {
+        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-user-plus text-blue-600"></i> Add Lead Source';
+        document.getElementById('formAction').value = 'add';
+        document.getElementById('sourceId').value = '';
+        document.getElementById('leadSourceForm').reset();
+        document.getElementById('countryCode').value = '+91';
+        document.getElementById('leadSourceModal').classList.add('show');
+    }
+
+    function openEditModal(id, firstName, lastName, countryCode, phone, address, remarks) {
+        document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-blue-600"></i> Edit Lead Source';
+        document.getElementById('formAction').value = 'edit';
+        document.getElementById('sourceId').value = id;
+        document.getElementById('firstName').value = firstName;
+        document.getElementById('lastName').value = lastName;
+        document.getElementById('countryCode').value = countryCode;
+        document.getElementById('phoneNumber').value = phone;
+        document.getElementById('address').value = address;
+        document.getElementById('remarks').value = remarks;
+        document.getElementById('leadSourceModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('leadSourceModal').classList.remove('show');
+    }
+
+    function confirmDelete(id, name) {
+        document.getElementById('deleteSourceId').value = id;
+        document.getElementById('deleteSourceName').textContent = name;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    // Add event listeners for edit buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id = this.dataset.id;
+            const firstName = this.dataset.firstname;
+            const lastName = this.dataset.lastname;
+            const countryCode = this.dataset.countrycode;
+            const phone = this.dataset.phone;
+            const address = this.dataset.address;
+            const remarks = this.dataset.remarks;
+            openEditModal(id, firstName, lastName, countryCode, phone, address, remarks);
+        });
+    });
+
+    // Add event listeners for delete buttons
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            confirmDelete(id, name);
+        });
+    });
+
+    // Close modal on outside click
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                modal.classList.remove('show');
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -27,6 +27,10 @@ urlpatterns = [
     path('projects/<int:project_id>/boq/', views.project_boq_detail, name='project_boq_detail'),
     path('access-control/', views.access_control, name='access_control'),
     path('access-control/update/', views.update_user_groups, name='update_user_groups'),
+    
+    # Lead Sources Management
+    path('lead-sources/', views.lead_sources, name='lead_sources'),
+    
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
     

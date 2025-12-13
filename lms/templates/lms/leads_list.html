@@ -30,7 +30,7 @@
       <option value="open">Open</option>
       <option value="contacted">Contacted</option>
       <option value="boq">BOQ</option>
-      <option value="advanced">Advanced</option>
+      <option value="advance">Advance</option>
       <option value="won">Won</option>
       <option value="lost">Lost</option>
     </select>
@@ -81,14 +81,16 @@
     {% elif project.status == 'In Progress' %}bg-blue-100 text-blue-700
     {% else %}bg-yellow-100 text-yellow-700{% endif %}" data-project-id="{{ project.id }}"
                 onchange="updateProjectStatus(this)">
-                <option value="open" {% if project.status == 'open' %}selected{% endif %}>Open</option>
-                <option value="contacted" {% if project.status == 'contacted' %}selected{% endif %}>Contacted</option>
-                <option value="boq" {% if project.status == 'boq' %}selected{% endif %}>BOQ</option>
-                <option value="advanced" {% if project.status == 'advanced' %}selected{% endif %}>Advanced</option>
-                <option value="In Progress" {% if project.status == 'In Progress' %}selected{% endif %}>In Progress
-                </option>
-                <option value="won" {% if project.status == 'won' %}selected{% endif %}>Won</option>
-                <option value="lost" {% if project.status == 'lost' %}selected{% endif %}>Lost</option>
+  <option value="open" {% if project.status == 'open' %}selected{% endif %}>Open</option>
+<option value="contacted" {% if project.status == 'contacted' %}selected{% endif %}>Contacted</option>
+<option value="boq" {% if project.status == 'boq' %}selected{% endif %}>BOQ</option>
+<option value="advance" {% if project.status == 'advance' %}selected{% endif %}>Advance</option>
+<option value="In Progress" {% if project.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+<option value="won" {% if project.status == 'won' %}selected{% endif %}>Won</option>
+<option value="lost" {% if project.status == 'lost' %}selected{% endif %}>Lost</option>
+
+
+
               </select>
             </td>
             <td class="px-6 py-3 text-center">
@@ -207,7 +209,7 @@
               <option value="open">Open</option>
               <option value="contacted">Contacted</option>
               <option value="boq">BOQ</option>
-              <option value="advanced">Advanced</option>
+              <option value="advance">Advance</option>
               <option value="won">Won</option>
               <option value="lost">Lost</option>
             </select>
@@ -238,7 +240,7 @@
 </div>
 
 <!-- Add Lead Modal -->
-<div id="addLeadModal" class="modal">
+<div id="addLeadModal" class="modal" style="z-index: 60 !important;">
   <div class="modal-content max-w-md modal-card">
     <div class="p-6">
       <div class="flex justify-between items-center mb-4">
@@ -310,15 +312,23 @@
           <!-- Lead Source (Autocomplete) -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Lead Source *</label>
-            <div class="relative">
-              <input type="text" id="editLeadSearch" name="lead_source_name" autocomplete="off" required
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Type lead name or phone...">
-              <ul id="editLeadSuggestions"
-                class="absolute bg-white border border-gray-200 w-full mt-1 rounded-lg hidden shadow-lg z-50"></ul>
-              <i id="editLeadStatusIcon"
-                class="fa-solid fa-circle-check text-green-500 hidden absolute right-3 top-3"></i>
-              <input type="hidden" name="lead_source_id" id="editLeadSourceId">
+            <div class="flex items-start gap-2">
+              <div class="relative flex-1">
+                <input type="text" id="editLeadSearch" name="lead_source_name" autocomplete="off" required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Type lead name or phone...">
+                <ul id="editLeadSuggestions"
+                  class="absolute bg-white border border-gray-200 w-full mt-1 rounded-lg hidden shadow-lg z-50"></ul>
+                <i id="editLeadStatusIcon"
+                  class="fa-solid fa-circle-check text-green-500 hidden absolute right-3 top-3"></i>
+                <input type="hidden" name="lead_source_id" id="editLeadSourceId">
+              </div>
+
+              <!-- ✅ Add New Lead Button -->
+              <button type="button" id="openAddLeadModalFromEdit"
+                class="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-1">
+                <i class="fa-solid fa-plus"></i> Add
+              </button>
             </div>
           </div>
 
@@ -352,7 +362,7 @@
               <option value="open">Open</option>
               <option value="contacted">Contacted</option>
               <option value="boq">BOQ</option>
-              <option value="advanced">Advanced</option>
+              <option value="advance">Advance</option>
               <option value="In Progress">In Progress</option>
               <option value="won">Won</option>
               <option value="lost">Lost</option>
@@ -624,11 +634,21 @@
     addLeadForm.reset();
   }
 
-  openAddLeadModal?.addEventListener('click', openModal);
+  openAddLeadModal?.addEventListener('click', () => {
+    addLeadModal.dataset.source = 'add';  // Mark as coming from Add Project
+    openModal();
+  });
   closeAddLeadModal?.addEventListener('click', closeModal);
   cancelAddLead?.addEventListener('click', closeModal);
   addLeadModal?.addEventListener('click', e => {
     if (e.target === addLeadModal) closeModal();
+  });
+
+  // === OPEN ADD LEAD MODAL FROM EDIT PROJECT ===
+  const openAddLeadModalFromEdit = document.getElementById('openAddLeadModalFromEdit');
+  openAddLeadModalFromEdit?.addEventListener('click', () => {
+    addLeadModal.dataset.source = 'edit';  // Mark as coming from Edit Project
+    openModal();
   });
 
   // === SAVE NEW LEAD ===
@@ -656,9 +676,20 @@
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          // ✅ Fill the main Add Project form
-          document.getElementById('leadSearch').value = `${data.first_name} ${data.last_name}`;
-          document.getElementById('leadSourceId').value = data.id;
+          // ✅ Check which modal triggered this
+          const source = addLeadModal.dataset.source;
+
+          if (source === 'edit') {
+            // Fill the Edit Project form
+            document.getElementById('editLeadSearch').value = `${data.first_name} ${data.last_name}`;
+            document.getElementById('editLeadSourceId').value = data.id;
+            document.getElementById('editLeadStatusIcon').classList.remove('hidden');
+          } else {
+            // Fill the Add Project form (default/original behavior)
+            document.getElementById('leadSearch').value = `${data.first_name} ${data.last_name}`;
+            document.getElementById('leadSourceId').value = data.id;
+            document.getElementById('leadStatusIcon').classList.remove('hidden');
+          }
 
           showToast('Lead added successfully!', 'success');
           closeModal();
