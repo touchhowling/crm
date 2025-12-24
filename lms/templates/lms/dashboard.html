@@ -17,7 +17,7 @@
       <select name="lead" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
         <option value="">All Leads</option>
         {% for lead in all_leads %}
-        <option value="{{ lead.id }}" {% if lead.id|stringformat:"s"==lead_filter %}selected{% endif %}>
+        <option value="{{ lead.id }}" {% if lead.id == lead_filter %}selected{% endif %}>
           {{ lead.first_name }} {{ lead.last_name }}
         </option>
         {% endfor %}
@@ -26,7 +26,7 @@
       <select name="city" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
         <option value="">All Cities</option>
         {% for city in all_cities %}
-        <option value="{{ city }}" {% if city==city_filter %}selected{% endif %}>{{ city }}</option>
+        <option value="{{ city }}" {% if city == city_filter %}selected{% endif %}>{{ city }}</option>
         {% endfor %}
       </select>
 
@@ -34,7 +34,7 @@
         class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
         <option value="">All Statuses</option>
         {% for status in all_statuses %}
-        <option value="{{ status }}" {% if status==status_filter %}selected{% endif %}>{{ status|title }}</option>
+        <option value="{{ status }}" {% if status == status_filter %}selected{% endif %}>{{ status|title }}</option>
         {% endfor %}
       </select>
 
