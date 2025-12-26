@@ -12,31 +12,41 @@
   <h1 class="text-xl font-bold mb-4">Dashboard Overview</h1>
 
   <!-- Filter Bar -->
-  <form method="get" class="bg-white p-4 mb-4 rounded-lg shadow-sm border border-gray-100">
-    <div class="flex flex-wrap gap-3 items-center">
-      <select name="lead" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-        <option value="">All Leads</option>
-        {% for lead in all_leads %}
+<form method="get" class="bg-white p-4 mb-4 rounded-lg shadow-sm border border-gray-100">
+  <div class="flex flex-wrap gap-3 items-center">
+    <select name="lead" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+      <option value="">All Leads</option>
+      {% for lead in all_leads %}
         <option value="{{ lead.id }}" {% if lead.id == lead_filter %}selected{% endif %}>
           {{ lead.first_name }} {{ lead.last_name }}
         </option>
-        {% endfor %}
-      </select>
+      {% endfor %}
+    </select>
+<select name="city" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+  <option value="">All Cities</option>
+  {% for city in all_cities %}
+    <option value="{{ city }}" {% if city == city_filter %}selected{% endif %}>
+      {{ city }}
+    </option>
+  {% endfor %}
+</select>
 
-      <select name="city" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-        <option value="">All Cities</option>
-        {% for city in all_cities %}
-        <option value="{{ city }}" {% if city == city_filter %}selected{% endif %}>{{ city }}</option>
-        {% endfor %}
-      </select>
 
-      <select name="status"
-        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-        <option value="">All Statuses</option>
-        {% for status in all_statuses %}
-        <option value="{{ status }}" {% if status == status_filter %}selected{% endif %}>{{ status|title }}</option>
-        {% endfor %}
-      </select>
+     <select name="status"
+  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+  
+  <option value="">All Statuses</option>
+
+  {% for status in all_statuses %}
+    {% if status != 'advanced' %}
+      <option value="{{ status }}" {% if status == status_filter %}selected{% endif %}>
+        {{ status|title }}
+      </option>
+    {% endif %}
+  {% endfor %}
+
+</select>
+
 
       <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition">
         <i class="fa-solid fa-filter"></i> Apply
